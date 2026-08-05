@@ -3,6 +3,89 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![License](https://img.shields.io/github/license/undel-gh/HA-Laundry-Monitor)
 
+A single Lovelace card for integrating **[Laundry Monitor](https://github.com/undel-gh/HA-Laundry-Monitor)**
+into Home Assistant: wash cycle status, statuses (wash/final spin/
+complete), cycle duration, current and power consumption, laundry tracking with a
+"Laundry unloaded" button, and a collapsible diagnostics block—all on one card.
+
+Example of a collapsed view:
+
+<img width="412" height="157" alt="image" src="https://github.com/user-attachments/assets/6eb8e0df-bd03-423c-90e9-2bf75736fca6" />
+
+Example of a view with expanded diagnostics:
+
+<img width="406" height="691" alt="image" src="https://github.com/user-attachments/assets/7375d7a8-9aa1-42eb-809f-a429eb71ce1c" />
+
+Example of a view with laundry unloading tracking:
+
+<img width="412" height="205" alt="image" src="https://github.com/user-attachments/assets/e0486bc9-c567-4bc3-9bae-fa7b798f2917" />
+
+The card doesn't require assembly: it's a pure Custom Element with no external dependencies
+(except for the built-in `ha-card` / `ha-icon` / `ha-entity-picker` from Home Assistant itself).
+No button-card, Mushroom, or card-mod are needed.
+
+## Translation Support
+
+The card follows the Home Assistant interface language:
+
+- the cycle state value is displayed via `hass.formatEntityState()` —
+"Ready / Washing / Final Spin..." or "Armed / Running / Final Spin..."
+depending on the language (the translations are provided by the integration itself);
+- string labels are taken from the `friendly_name` of the entities, meaning they are also translated;
+- Custom card labels (section titles, "Laundry Unloaded") are taken from the
+built-in `ru`/`en` dictionary for `hass.language`.
+
+Nothing is hardcoded—when changing the HA language, the card switches automatically.
+
+## Installation
+
+### Manual
+1. Copy `Laundry-Monitor-Card.js` to `config/www/Laundry-Monitor-Card.js`.
+2. Settings → Panels → Resources → Add resource:
+- URL: `/local/Laundry-Monitor-Card.js`
+- Resource type: JavaScript module
+
+### Via HACS (custom repository)
+1. HACS → Frontend → menu (⋮) → Custom repositories.
+2. Add the repository URL, category **Lovelace**.
+3. Install the `Laundry Monitor Card`; the resource will be connected automatically.
+
+## Configuration
+
+The card can be configured using the visual editor (the "Edit" button on the card)
+or in YAML. The minimum required entities are cycle state, status, and power;
+optional entities (current, energy, leakage, laundry tracking) are simply hidden if missing. A full example is in [`example-config.yaml`](example-config.yaml).
+
+```yaml
+type: custom:laundry-monitor-card
+title: Washing Machine
+cycle_state_entity: sensor.washing_machine_cycle_state
+running_entity: binary_sensor.washing_machine_running
+final_spin_entity: binary_sensor.washing_machine_final_spin_detected
+finished_entity: binary_sensor.washing_machine_finished
+power_entity: sensor.washing_machine_current_power
+current_entity: sensor.washing_machine_current_draw
+```
+
+### Block Behavior
+
+- **Laundry Tracking** (row "Laundry in machine" + button "Laundry unloaded")
+is displayed only when the corresponding entities are available. If tracking is disabled in the
+integration and the entity is 'unavailable', the block is hidden.
+- **Leak** is shown as a red badge in the header only when triggered. - **Diagnostics** is collapsed by default; expands on click. Within are sections:
+"Activity," "Final Spin," "Cycle Completion," and "State Transitions."
+- Clicking on a row or chip opens the standard `more-info` window for the entity.
+
+## Compatibility
+
+Designed for Laundry Monitor integration. Default entity IDs
+correspond to a typical installation; if necessary, enter your own in the editor.
+
+# Карточка Laundry Monitor
+
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
+![License](https://img.shields.io/github/license/undel-gh/HA-Laundry-Monitor)
+
 Единая Lovelace-карточка для интеграции **[Laundry Monitor](https://github.com/undel-gh/HA-Laundry-Monitor)**
 в Home Assistant: состояние цикла стирки, статусы (стирка / финальный отжим /
 завершено), длительность цикла, потребляемый ток и мощность, трекинг белья с
