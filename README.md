@@ -8,6 +8,12 @@
 завершено), длительность цикла, потребляемый ток и мощность, трекинг белья с
 кнопкой «Бельё выгружено» и сворачиваемый блок диагностики — всё на одной карточке.
 
+Пример свернутого вида:
+<img width="412" height="157" alt="image" src="https://github.com/user-attachments/assets/6eb8e0df-bd03-423c-90e9-2bf75736fca6" />
+
+Пример вида с развернутой диагностикой:
+<img width="406" height="691" alt="image" src="https://github.com/user-attachments/assets/7375d7a8-9aa1-42eb-809f-a429eb71ce1c" />
+
 Карточка не требует сборки: чистый Custom Element без внешних зависимостей
 (кроме встроенных `ha-card` / `ha-icon` / `ha-entity-picker` из самого Home Assistant).
 Не нужны ни button-card, ни Mushroom, ни card-mod.
