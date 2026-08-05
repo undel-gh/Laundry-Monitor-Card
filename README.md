@@ -16,6 +16,11 @@
 
 <img width="406" height="691" alt="image" src="https://github.com/user-attachments/assets/7375d7a8-9aa1-42eb-809f-a429eb71ce1c" />
 
+Пример вида с трекингом выгрузки белья
+
+<img width="412" height="205" alt="image" src="https://github.com/user-attachments/assets/e0486bc9-c567-4bc3-9bae-fa7b798f2917" />
+
+
 Карточка не требует сборки: чистый Custom Element без внешних зависимостей
 (кроме встроенных `ha-card` / `ha-icon` / `ha-entity-picker` из самого Home Assistant).
 Не нужны ни button-card, ни Mushroom, ни card-mod.
