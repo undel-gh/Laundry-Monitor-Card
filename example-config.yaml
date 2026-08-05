@@ -1,0 +1,34 @@
+type: custom:laundry-monitor-card
+title: Стиралка
+icon: mdi:washing-machine
+# --- основные ---
+cycle_state_entity: sensor.stiralka_cycle_state
+running_entity: binary_sensor.stiralka_running
+final_spin_entity: binary_sensor.stiralka_final_spin_detected
+finished_entity: binary_sensor.stiralka_finished
+current_cycle_duration_entity: sensor.stiralka_current_cycle_duration
+last_cycle_duration_entity: sensor.stiralka_last_cycle_duration
+last_cycle_energy_entity: ""            # нет датчика энергии — оставить пустым
+power_entity: sensor.stiralka_current_power
+current_entity: sensor.kukhnia_stiralka_current_draw
+leak_entity: binary_sensor.stiralka_leak
+# --- трекинг белья (показывается, только когда сущности доступны) ---
+laundry_present_entity: binary_sensor.stiralka_laundry_present
+mark_unloaded_entity: button.stiralka_mark_unloaded
+last_unloaded_entity: sensor.stiralka_last_unloaded_at
+# --- диагностика (сворачиваемый блок) ---
+activity_entity: binary_sensor.stiralka_activity_detected
+power_activity_entity: binary_sensor.kukhnia_stiralka_power_activity_detected
+current_activity_entity: binary_sensor.kukhnia_stiralka_current_activity_detected
+last_activity_entity: sensor.stiralka_last_activity
+last_power_activity_entity: sensor.kukhnia_stiralka_last_power_activity
+last_current_activity_entity: sensor.kukhnia_stiralka_last_current_activity
+final_spin_confidence_entity: sensor.stiralka_final_spin_confidence
+final_spin_evidence_entity: sensor.stiralka_final_spin_evidence_count
+finish_since_entity: sensor.stiralka_finish_inactivity_since
+finish_deadline_entity: sensor.stiralka_finish_confirmation_deadline
+finish_remaining_entity: sensor.stiralka_finish_confirmation_remaining
+last_state_change_entity: sensor.stiralka_last_state_change
+last_transition_reason_entity: sensor.stiralka_last_transition_reason
+last_rejected_entity: sensor.stiralka_last_rejected_transition
+rejected_count_entity: sensor.stiralka_rejected_transition_count
