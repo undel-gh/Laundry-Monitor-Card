@@ -120,7 +120,7 @@ const STRINGS = {
     transitions: "Переходы состояния",
     timing: "Длительность и питание",
     tracking: "Бельё",
-    mark_unloaded: "Бельё выгружено",    
+    mark_unloaded: "Бельё выгружено",
     show_more: "Диагностика",
     unavailable: "недоступно",
     editor_group_primary: "Основные сущности",
