@@ -95,8 +95,10 @@ integration and the entity is 'unavailable', the block is hidden.
 
 ## Compatibility
 
-Designed for Laundry Monitor integration. Default entity IDs
-correspond to a typical installation; if necessary, enter your own in the editor.
+Home Assistant 2024.11.0 or newer is required by the card frontend.
+The card does not contain default entity IDs. Select entities from the
+corresponding Laundry Monitor device in the visual editor or configure them
+explicitly in YAML.
 
 # Карточка Laundry Monitor
 
