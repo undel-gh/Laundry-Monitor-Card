@@ -101,7 +101,7 @@ correspond to a typical installation; if necessary, enter your own in the editor
 # Карточка Laundry Monitor
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
-![License](https://img.shields.io/github/license/undel-gh/HA-Laundry-Monitor)
+![License](https://img.shields.io/github/license/undel-gh/Laundry-Monitor-Card)
 
 Единая Lovelace-карточка для интеграции **[Laundry Monitor](https://github.com/undel-gh/HA-Laundry-Monitor)**
 в Home Assistant: состояние цикла стирки, статусы (стирка / финальный отжим /
@@ -198,6 +198,6 @@ current_entity: sensor.stiralka_current_draw
 
 ## Совместимость
 
-Разработано для интеграции Laundry Monitor и Home Assistant 2026.6.0 или новее.
-Карточка не содержит заранее заданных идентификаторов сущностей: выберите сущности
-+конкретного устройства Laundry Monitor в визуальном редакторе или задайте их в YAML.
+Для самой карточки требуется Home Assistant 2024.11.0 или новее.
+Карточка не содержит заранее заданных entity ID: выберите сущности
+конкретного устройства Laundry Monitor в визуальном редакторе или задайте их в YAML.
