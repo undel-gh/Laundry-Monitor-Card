@@ -58,6 +58,9 @@ optional entities (current, energy, leakage, laundry tracking, and electrical/hy
 diagnostics) are simply hidden if missing. A full example is in
 [`example-config.yaml`](example-config.yaml).
 
+New cards do not assume any entity IDs. Select the entities that belong to your
+Laundry Monitor device in the visual editor or configure them explicitly in YAML.
+The visual editor follows the Home Assistant interface language (English/Russian).
 ```yaml
 type: custom:laundry-monitor-card
 title: Washing Machine
@@ -149,6 +152,9 @@ correspond to a typical installation; if necessary, enter your own in the editor
 diagnostics) при отсутствии просто скрываются. Полный пример —
 в [`example-config.yaml`](example-config.yaml).
 
+Новые карточки не предполагают никаких заранее заданных entity ID. Выберите
+сущности своего устройства Laundry Monitor в визуальном редакторе или задайте
+их явно в YAML. Язык визуального редактора следует языку интерфейса Home Assistant.
 ```yaml
 type: custom:laundry-monitor-card
 title: Стиралка
