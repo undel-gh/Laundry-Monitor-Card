@@ -13,7 +13,7 @@
  *    следует языку интерфейса HA (интеграция поставляет en/ru). Немногочисленные
  *    собственные подписи карточки берутся из встроенного словаря по hass.language.
  */
-const CARD_VERSION = "1.0.4-rc2-patched";
+const CARD_VERSION = "1.0.4-rc3";
 const CARD_TAG = "laundry-monitor-card";
 const EDITOR_TAG = "laundry-monitor-card-editor";
 
