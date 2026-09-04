@@ -218,7 +218,7 @@ const PRIMARY_ENTITY_KEYS = [
   "power_entity",
   "current_entity",
   "leak_entity",
- ];
+];
 
 const TRACKING_ENTITY_KEYS = [
   "laundry_present_entity",
@@ -274,7 +274,26 @@ const DIAGNOSTIC_GROUPS = [
 
 const DIAGNOSTIC_ENTITY_KEYS = [
   ...new Set(DIAGNOSTIC_GROUPS.flatMap((group) => group.keys)),
+].filter(
+  (key) =>
+    !PRIMARY_ENTITY_KEYS.includes(key) &&
+    !TRACKING_ENTITY_KEYS.includes(key)
+);
+
+const EDITOR_ENTITY_KEYS = [
+  ...PRIMARY_ENTITY_KEYS,
+  ...TRACKING_ENTITY_KEYS,
+  ...DIAGNOSTIC_ENTITY_KEYS,
 ];
+
+const ENTITY_FIELD_KEYS = ENTITY_FIELDS.map((field) => field.key);
+if (
+  new Set(EDITOR_ENTITY_KEYS).size !== EDITOR_ENTITY_KEYS.length ||
+  EDITOR_ENTITY_KEYS.length !== ENTITY_FIELD_KEYS.length ||
+  ENTITY_FIELD_KEYS.some((key) => !EDITOR_ENTITY_KEYS.includes(key))
+) {
+  throw new Error("Laundry Monitor Card: editor entity groups are inconsistent.");
+}
 
 const EDITOR_LABEL_KEYS = {
   title: "editor_title",
@@ -426,6 +445,12 @@ function css() {
       font-size: 0.88em; color: var(--secondary-text-color);
       white-space: nowrap; text-align: right;
     }
+    .lm-config-required {
+      padding: 16px;
+      color: var(--secondary-text-color);
+      font-size: 0.95em;
+      line-height: 1.4;
+    }
   `;
 }
 
@@ -444,13 +469,10 @@ class LaundryMonitorCard extends HTMLElement {
   }
 
   setConfig(config) {
-    if (!config) throw new Error("Некорректная конфигурация карточки");
-    if (!config.cycle_state_entity && !config.running_entity) {
-      throw new Error(
-        "Laundry Monitor Card: configure cycle_state_entity or running_entity."
-      );
-    }
+  if (!config) throw new Error("Invalid Laundry Monitor Card configuration");
     this._config = { ...DEFAULT_CONFIG, ...config };
+  this._configurationIncomplete =
+    !this._config.cycle_state_entity && !this._config.running_entity;
     this._trackedEntityIds = [
       ...new Set(ENTITY_FIELDS.map((field) => this._config[field.key]).filter(Boolean)),
     ];
@@ -535,7 +557,17 @@ class LaundryMonitorCard extends HTMLElement {
     root.appendChild(style);
 
     const card = document.createElement("ha-card");
-
+if (this._configurationIncomplete) {
+  const message = document.createElement("div");
+  message.className = "lm-config-required";
+  message.textContent = this._t("configuration_required");
+  card.appendChild(message);
+  root.appendChild(card);
+  this._els = {};
+  this._diagSig = null;
+  this._built = true;
+  return;
+}
     // header
     const header = document.createElement("div");
     header.className = "lm-header";
@@ -630,6 +662,9 @@ class LaundryMonitorCard extends HTMLElement {
       const open = diag.classList.toggle("open");
       diagToggle.classList.toggle("open", open);
       diagToggle.setAttribute("aria-expanded", String(open));
+      this.dispatchEvent(
+        new Event("ll-rebuild", { bubbles: true, composed: true })
+      );
     };
     diagToggle.addEventListener("click", toggleDiagnostics);
     diagToggle.addEventListener("keydown", (event) => {
@@ -956,7 +991,6 @@ class LaundryMonitorCardEditor extends HTMLElement {
     form.addEventListener("value-changed", (event) => {
       event.stopPropagation();
       const value = event.detail?.value || {};
-      this._lastFormData = JSON.stringify(value);
       this._config = {
         ...DEFAULT_CONFIG,
         ...value,
@@ -975,11 +1009,7 @@ class LaundryMonitorCardEditor extends HTMLElement {
       if (this._hass && this.isConnected) this._buildForm();
       return;
     }
-    const next = this._formData();
-    const serialized = JSON.stringify(next);
-    if (serialized === this._lastFormData) return;
-    this._form.data = next;
-    this._lastFormData = serialized;
+    this._form.data = this._formData();
   }
 
   _fireConfigChanged() {
