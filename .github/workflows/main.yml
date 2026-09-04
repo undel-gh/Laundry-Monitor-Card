@@ -4,6 +4,12 @@ on:
   pull_request:
   workflow_dispatch:
 jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: node --check Laundry-Monitor-Card.js
   hacs:
     runs-on: ubuntu-latest
     steps:
@@ -23,3 +29,4 @@ jobs:
           comment: # optional, default is true
           # Personal access token (PAT)
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
