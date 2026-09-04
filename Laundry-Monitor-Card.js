@@ -49,7 +49,7 @@ const DEFAULT_CONFIG = {
   spin_electrical_candidate_entity: "",
   spin_power_rolling_median_entity: "",
   spin_current_rolling_median_entity: "",
-  spin_electrical_candidate_since_entity: ""
+  spin_electrical_candidate_since_entity: "",
   finish_since_entity: "",
   finish_deadline_entity: "",
   finish_remaining_entity: "",
