@@ -109,6 +109,7 @@ const STRINGS = {
     field_last_transition_reason: "Last transition reason",
     field_last_rejected: "Last rejected transition",
     field_rejected_count: "Rejected transition count",
+    action_failed: "Action failed",
   },
   ru: {
     diagnostics: "Диагностика",
@@ -158,6 +159,7 @@ const STRINGS = {
     field_last_transition_reason: "Причина последнего перехода",
     field_last_rejected: "Последний отклонённый переход",
     field_rejected_count: "Отклонённых переходов",
+    action_failed: "Не удалось выполнить действие",
   },
 };
 
@@ -211,9 +213,27 @@ function isUnavailable(st) {
   return !st || st.state === "unavailable" || st.state === "unknown" || st.state === "";
 }
 
-function fmtDuration(seconds) {
-  const s = Math.round(Number(seconds));
-  if (!isFinite(s)) return "—";
+function fmtDuration(stateObj, hass) {
+  if (isUnavailable(stateObj)) return "—";
+  const value = Number(stateObj.state);
+  if (!Number.isFinite(value)) {
+    return hass && hass.formatEntityState
+      ? hass.formatEntityState(stateObj)
+      : stateObj.state;
+  }
+
+  const unit = String(stateObj.attributes?.unit_of_measurement || "s").toLowerCase();
+  let seconds;
+  if (["s", "sec", "second", "seconds"].includes(unit)) seconds = value;
+  else if (["min", "minute", "minutes"].includes(unit)) seconds = value * 60;
+  else if (["h", "hr", "hour", "hours"].includes(unit)) seconds = value * 3600;
+  else {
+    return hass && hass.formatEntityState
+      ? hass.formatEntityState(stateObj)
+      : stateObj.state;
+  }
+
+  const s = Math.max(0, Math.round(seconds));
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   const x = s % 60;
@@ -221,8 +241,18 @@ function fmtDuration(seconds) {
   return h > 0 ? `${h}:${pad(m)}:${pad(x)}` : `${m}:${pad(x)}`;
 }
 
+function compactConfig(config) {
+  const result = {};
+  Object.entries(config || {}).forEach(([key, value]) => {
+    if (value === "" || value === null || value === undefined) return;
+    result[key] = value;
+  });
+  return result;
+}
+
 function css() {
   return `
+    [hidden] { display: none !important; }
     ha-card { padding: 0; overflow: hidden; }
     .lm-header {
       display: flex; align-items: center; gap: 12px;
@@ -320,12 +350,17 @@ function css() {
 }
 
 class LaundryMonitorCard extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+  }
+
   static getConfigElement() {
     return document.createElement(EDITOR_TAG);
   }
 
   static getStubConfig() {
-    return { type: `custom:${CARD_TAG}`, ...DEFAULT_CONFIG };
+    return { type: `custom:${CARD_TAG}` };
   }
 
   setConfig(config) {
@@ -336,14 +371,30 @@ class LaundryMonitorCard extends HTMLElement {
   }
 
   set hass(hass) {
+    const previous = this._hass;
     this._hass = hass;
-    if (!this._config) return;
-    if (!this._built) this._render();
-    else this._update();
+    if (!hass || !this._config) return;
+    if (!this._built) {
+      this._render();
+      return;
+    }
+    if (previous && !this._relevantStatesChanged(previous, hass)) return;
+    this._update();
   }
 
   get hass() {
     return this._hass;
+  }
+
+  _relevantStatesChanged(previous, current) {
+    if (!previous || previous.language !== current.language) return true;
+    const ids = new Set(
+      ENTITY_FIELDS.map((field) => this._config[field.key]).filter(Boolean)
+    );
+    for (const entityId of ids) {
+      if (previous.states[entityId] !== current.states[entityId]) return true;
+    }
+    return false;
   }
 
   getCardSize() {
@@ -379,29 +430,41 @@ class LaundryMonitorCard extends HTMLElement {
   // ---- построение DOM (один раз) ----
   _render() {
     const cfg = this._config;
-    this.innerHTML = "";
+    const root = this.shadowRoot;
+    root.innerHTML = "";
 
     const style = document.createElement("style");
     style.textContent = css();
-    this.appendChild(style);
+    root.appendChild(style);
 
     const card = document.createElement("ha-card");
 
     // header
     const header = document.createElement("div");
     header.className = "lm-header";
-    header.innerHTML = `
-      <ha-icon class="lm-icon" icon="${cfg.icon}"></ha-icon>
-      <div class="lm-titles">
-        <span class="lm-title"></span>
-        <span class="lm-state">—</span>
-      </div>
-      <span class="lm-leak-badge"><ha-icon icon="mdi:water-alert"></ha-icon><span></span></span>
-    `;
-    header.querySelector(".lm-titles").addEventListener("click", () =>
+    const headerIcon = document.createElement("ha-icon");
+    headerIcon.className = "lm-icon";
+    headerIcon.setAttribute("icon", cfg.icon || "mdi:washing-machine");
+    const titles = document.createElement("div");
+    titles.className = "lm-titles";
+    const title = document.createElement("span");
+    title.className = "lm-title";
+    const state = document.createElement("span");
+    state.className = "lm-state";
+    state.textContent = "—";
+    titles.append(title, state);
+    const leakBadge = document.createElement("span");
+    leakBadge.className = "lm-leak-badge";
+    const leakIcon = document.createElement("ha-icon");
+    leakIcon.setAttribute("icon", "mdi:water-alert");
+    const leakText = document.createElement("span");
+    leakBadge.append(leakIcon, leakText);
+    header.append(headerIcon, titles, leakBadge);
+
+    titles.addEventListener("click", () =>
       this._moreInfo(cfg.cycle_state_entity)
     );
-    header.querySelector(".lm-leak-badge").addEventListener("click", () =>
+    leakBadge.addEventListener("click", () =>
       this._moreInfo(cfg.leak_entity)
     );
     card.appendChild(header);
@@ -411,10 +474,13 @@ class LaundryMonitorCard extends HTMLElement {
     chips.className = "lm-chips";
     const mkChip = (key, entityId, icon, color) => {
       const b = document.createElement("button");
+      b.type = "button";
       b.className = `lm-chip ${color}`;
       b.dataset.key = key;
       b.innerHTML = `<ha-icon icon="${icon}"></ha-icon>`;
       b.addEventListener("click", () => this._moreInfo(entityId));
+      b.hidden = !entityId;
+      b.setAttribute("aria-pressed", "false");
       return b;
     };
     const chipRunning = mkChip("running", cfg.running_entity, "mdi:sync", "c-blue");
@@ -442,6 +508,7 @@ class LaundryMonitorCard extends HTMLElement {
     present.innerHTML = `<ha-icon icon="mdi:basket-outline"></ha-icon><span></span>`;
     present.addEventListener("click", () => this._moreInfo(cfg.laundry_present_entity));
     const unloadBtn = document.createElement("button");
+    unloadBtn.type = "button";
     unloadBtn.className = "lm-unload-btn";
     unloadBtn.innerHTML = `<ha-icon icon="mdi:basket-unfill"></ha-icon><span></span>`;
     unloadBtn.addEventListener("click", () => this._pressUnload());
@@ -451,6 +518,9 @@ class LaundryMonitorCard extends HTMLElement {
     // diagnostics toggle + body
     const diagToggle = document.createElement("div");
     diagToggle.className = "lm-diag-toggle";
+    diagToggle.setAttribute("role", "button");
+    diagToggle.setAttribute("tabindex", "0");
+    diagToggle.setAttribute("aria-expanded", "false");
     diagToggle.innerHTML = `
       <ha-icon icon="mdi:stethoscope"></ha-icon>
       <span class="lm-diag-toggle-label"></span>
@@ -459,22 +529,29 @@ class LaundryMonitorCard extends HTMLElement {
     `;
     const diag = document.createElement("div");
     diag.className = "lm-diag";
-    diagToggle.addEventListener("click", () => {
+    const toggleDiagnostics = () => {
       const open = diag.classList.toggle("open");
       diagToggle.classList.toggle("open", open);
+      diagToggle.setAttribute("aria-expanded", String(open));
+    };
+    diagToggle.addEventListener("click", toggleDiagnostics);
+    diagToggle.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      toggleDiagnostics();
     });
     card.appendChild(diagToggle);
     card.appendChild(diag);
 
-    this.appendChild(card);
+    root.appendChild(card);
 
     // сохраняем ссылки для точечных обновлений
     this._els = {
-      icon: header.querySelector(".lm-icon"),
-      title: header.querySelector(".lm-title"),
-      state: header.querySelector(".lm-state"),
-      leakBadge: header.querySelector(".lm-leak-badge"),
-      leakBadgeText: header.querySelector(".lm-leak-badge span"),
+      icon: headerIcon,
+      title,
+      state,
+      leakBadge,
+      leakBadgeText: leakText,
       chipRunning,
       chipSpin,
       chipFinished,
@@ -491,7 +568,7 @@ class LaundryMonitorCard extends HTMLElement {
       diagToggleLabel: diagToggle.querySelector(".lm-diag-toggle-label"),
       diag,
     };
-    this._diagBuilt = false;
+    this._diagSig = null;
     this._built = true;
     this._update();
   }
@@ -549,7 +626,7 @@ class LaundryMonitorCard extends HTMLElement {
         ],
       },
     ];
-
+    const wasOpen = this._els.diag.classList.contains("open");
     this._els.diag.innerHTML = "";
     this._diagRows = [];
     groups.forEach((g) => {
@@ -573,7 +650,26 @@ class LaundryMonitorCard extends HTMLElement {
         });
       });
     });
-    this._diagBuilt = true;
+    const hasDiagnostics = this._diagRows.length > 0;
+    this._els.diagToggle.hidden = !hasDiagnostics;
+    this._els.diag.hidden = !hasDiagnostics;
+    if (hasDiagnostics && wasOpen) {
+      this._els.diag.classList.add("open");
+      this._els.diagToggle.classList.add("open");
+      this._els.diagToggle.setAttribute("aria-expanded", "true");
+    } else if (!hasDiagnostics) {
+      this._els.diag.classList.remove("open");
+      this._els.diagToggle.classList.remove("open");
+      this._els.diagToggle.setAttribute("aria-expanded", "false");
+    }
+  }
+  _diagSignature() {
+    const cfg = this._config;
+    const ids = ENTITY_FIELDS.map((field) => {
+      const entityId = cfg[field.key];
+      return entityId && this._hass.states[entityId] ? entityId : "";
+    });
+    return `${ids.join("|")}|${this._hass.language || "en"}`;
   }
 
   // ---- точечное обновление (без пересоздания DOM) ----
@@ -608,18 +704,30 @@ class LaundryMonitorCard extends HTMLElement {
     // status chips
     const setChip = (el, entityId) => {
       const st = hass.states[entityId];
+      const visible = !!entityId && !!st;
+      el.hidden = !visible;
       el.classList.toggle("on", !!st && st.state === "on");
-      el.title = this._name(entityId, "");
+      const label = this._name(entityId, "");
+      el.title = label;
+      el.setAttribute("aria-label", label || entityId || "");
+      el.setAttribute("aria-pressed", String(!!st && st.state === "on"));
     };
     setChip(els.chipRunning, cfg.running_entity);
     setChip(els.chipSpin, cfg.final_spin_entity);
     setChip(els.chipFinished, cfg.finished_entity);
 
-    // duration: running cycle if present, else last cycle
+    // duration: current only while a cycle is active; otherwise last completed cycle
     const curDur = hass.states[cfg.current_cycle_duration_entity];
     const lastDur = hass.states[cfg.last_cycle_duration_entity];
-    let durSrc = !isUnavailable(curDur) ? curDur : !isUnavailable(lastDur) ? lastDur : null;
-    els.durVal.textContent = durSrc ? fmtDuration(durSrc.state) : "—";
+    const activeCycle =
+      stateObj && (stateObj.state === "running" || stateObj.state === "final_spin");
+    const durSrc =
+      activeCycle && !isUnavailable(curDur)
+        ? curDur
+        : !isUnavailable(lastDur)
+        ? lastDur
+        : null;
+    els.durVal.textContent = durSrc ? fmtDuration(durSrc, hass) : "—";
 
     // current draw (optional)
     const curSt = hass.states[cfg.current_entity];
@@ -664,7 +772,11 @@ class LaundryMonitorCard extends HTMLElement {
 
     // diagnostics
     els.diagToggleLabel.textContent = this._t("show_more");
-    if (!this._diagBuilt) this._buildDiag();
+    const diagSig = this._diagSignature();
+    if (diagSig !== this._diagSig) {
+      this._diagSig = diagSig;
+      this._buildDiag();
+    }
     if (this._diagRows) {
       this._diagRows.forEach((r) => {
         const st = hass.states[r.entityId];
@@ -683,7 +795,21 @@ class LaundryMonitorCard extends HTMLElement {
     const cfg = this._config;
     const hass = this._hass;
     if (!hass || !cfg.mark_unloaded_entity) return;
-    hass.callService("button", "press", { entity_id: cfg.mark_unloaded_entity });
+    const button = this._els && this._els.unloadBtn;
+    if (button) button.disabled = true;
+    Promise.resolve(
+      hass.callService("button", "press", { entity_id: cfg.mark_unloaded_entity })
+    )
+      .catch((error) => {
+        console.error("Laundry Monitor Card: mark unloaded failed", error);
+        if (button) button.title = this._t("action_failed");
+      })
+      .finally(() => {
+        if (button) {
+          const st = hass.states[cfg.mark_unloaded_entity];
+          button.disabled = !st || isUnavailable(st);
+        }
+      });
   }
 }
 
@@ -693,6 +819,11 @@ class LaundryMonitorCard extends HTMLElement {
 // первом построении — далее пикеры не пересоздаются и не сбрасываются.
 // ------------------------------------------------------------------
 class LaundryMonitorCardEditor extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+  }
+
   setConfig(config) {
     this._config = { ...DEFAULT_CONFIG, ...config };
     if (this._built) this._syncFormValues();
@@ -702,9 +833,15 @@ class LaundryMonitorCardEditor extends HTMLElement {
   set hass(hass) {
     const previousLanguage = this._hass && this._hass.language;
     this._hass = hass;
+    if (!hass) return;
     if (!this._built && this._config) this._buildForm();
     else if (this._built && previousLanguage !== hass.language) {
       this._updateTranslations();
+    }
+    if (this._built && this._pickers) {
+      Object.values(this._pickers).forEach((picker) => {
+        picker.hass = hass;
+      });
     }
   }
 
@@ -726,7 +863,8 @@ class LaundryMonitorCardEditor extends HTMLElement {
     });
   }
   _buildForm() {
-    this.innerHTML = "";
+    const root = this.shadowRoot;
+    root.innerHTML = "";
     const style = document.createElement("style");
     style.textContent = `
       .lm-editor { display: flex; flex-direction: column; gap: 10px; padding: 8px 0; }
@@ -740,7 +878,7 @@ class LaundryMonitorCardEditor extends HTMLElement {
         font-size: 0.8em; color: var(--secondary-text-color); margin-bottom: 2px;
       }
     `;
-    this.appendChild(style);
+    root.appendChild(style);
 
     const wrap = document.createElement("div");
     wrap.className = "lm-editor";
@@ -810,7 +948,7 @@ class LaundryMonitorCardEditor extends HTMLElement {
       this._fieldLabels[field.key] = label;
     });
 
-    this.appendChild(wrap);
+    root.appendChild(wrap);
     this._built = true;
   }
 
@@ -830,9 +968,11 @@ class LaundryMonitorCardEditor extends HTMLElement {
   }
 
   _fireConfigChanged() {
+    const config = compactConfig(this._config);
+    config.type = config.type || `custom:${CARD_TAG}`;
     this.dispatchEvent(
       new CustomEvent("config-changed", {
-        detail: { config: this._config },
+        detail: { config },
         bubbles: true,
         composed: true,
       })
