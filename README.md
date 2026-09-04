@@ -54,7 +54,9 @@ Nothing is hardcoded—when changing the HA language, the card switches automati
 
 The card can be configured using the visual editor (the "Edit" button on the card)
 or in YAML. The minimum required entities are cycle state, status, and power;
-optional entities (current, energy, leakage, laundry tracking) are simply hidden if missing. A full example is in [`example-config.yaml`](example-config.yaml).
+optional entities (current, energy, leakage, laundry tracking, and electrical/hybrid
+diagnostics) are simply hidden if missing. A full example is in
+[`example-config.yaml`](example-config.yaml).
 
 ```yaml
 type: custom:laundry-monitor-card
@@ -72,8 +74,13 @@ current_entity: sensor.washing_machine_current_draw
 - **Laundry Tracking** (row "Laundry in machine" + button "Laundry unloaded")
 is displayed only when the corresponding entities are available. If tracking is disabled in the
 integration and the entity is 'unavailable', the block is hidden.
-- **Leak** is shown as a red badge in the header only when triggered. - **Diagnostics** is collapsed by default; expands on click. Within are sections:
-"Activity," "Final Spin," "Cycle Completion," and "State Transitions."
+- **Leak** is shown as a red badge in the header only when triggered.
+- **Diagnostics** is collapsed by default; expands on click. It can contain
+  "Activity," "Final Spin," "Electrical / hybrid," "Timing & power," "Laundry,"
+  "Cycle Completion," and "State Transitions" sections.
+- Electrical/hybrid diagnostic entities are disabled by default by the Laundry Monitor
+  integration. Enable the desired entities in Home Assistant and select them in the card
+  editor before expecting those rows to appear.
 - Clicking on a row or chip opens the standard `more-info` window for the entity.
 
 ## Compatibility
@@ -138,8 +145,9 @@ correspond to a typical installation; if necessary, enter your own in the editor
 
 Карточку можно настроить визуальным редактором (кнопка «Изменить» на карточке)
 или в YAML. Минимально нужны сущности состояния цикла, статусов и мощности;
-опциональные (ток, энергия, протечка, трекинг белья) при отсутствии просто
-скрываются. Полный пример — в [`example-config.yaml`](example-config.yaml).
+опциональные (ток, энергия, протечка, трекинг белья и electrical/hybrid
+diagnostics) при отсутствии просто скрываются. Полный пример —
+в [`example-config.yaml`](example-config.yaml).
 
 ```yaml
 type: custom:laundry-monitor-card
@@ -149,7 +157,7 @@ running_entity: binary_sensor.stiralka_running
 final_spin_entity: binary_sensor.stiralka_final_spin_detected
 finished_entity: binary_sensor.stiralka_finished
 power_entity: sensor.stiralka_current_power
-current_entity: sensor.kukhnia_stiralka_current_draw
+current_entity: sensor.stiralka_current_draw
 ```
 
 ### Поведение блоков
@@ -159,7 +167,12 @@ current_entity: sensor.kukhnia_stiralka_current_draw
   интеграции выключен и сущности `unavailable` — блок скрыт.
 - **Протечка** показывается как красный бейдж в шапке только при срабатывании.
 - **Диагностика** свёрнута по умолчанию; раскрывается по клику. Внутри — секции
-  «Активность», «Финальный отжим», «Завершение цикла», «Переходы состояния».
+  «Активность», «Финальный отжим», «Электрика / hybrid»,
+  «Длительность и питание», «Бельё», «Завершение цикла» и
+  «Переходы состояния».
+- Диагностические сущности electrical/hybrid по умолчанию отключены самой
+  интеграцией Laundry Monitor. Сначала включите нужные сущности в Home Assistant,
+  затем выберите их в редакторе карточки.
 - Клик по строке или чипу открывает стандартное окно `more-info` сущности.
 
 ## Совместимость
