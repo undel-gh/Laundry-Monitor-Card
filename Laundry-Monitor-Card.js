@@ -22,41 +22,41 @@ const DEFAULT_CONFIG = {
   title: "",
   icon: "mdi:washing-machine",
   // основные
-  cycle_state_entity: "sensor.stiralka_cycle_state",
-  running_entity: "binary_sensor.stiralka_running",
-  final_spin_entity: "binary_sensor.stiralka_final_spin_detected",
-  finished_entity: "binary_sensor.stiralka_finished",
-  current_cycle_duration_entity: "sensor.stiralka_current_cycle_duration",
-  last_cycle_duration_entity: "sensor.stiralka_last_cycle_duration",
+  cycle_state_entity: "",
+  running_entity: "",
+  final_spin_entity: "",
+  finished_entity: "",
+  current_cycle_duration_entity: "",
+  last_cycle_duration_entity: "",
   last_cycle_energy_entity: "",
-  power_entity: "sensor.stiralka_current_power",
-  current_entity: "sensor.kukhnia_stiralka_current_draw",
-  leak_entity: "binary_sensor.stiralka_leak",
+  power_entity: "",
+  current_entity: "",
+  leak_entity: "",
   // трекинг белья
-  laundry_present_entity: "binary_sensor.stiralka_laundry_present",
-  mark_unloaded_entity: "button.stiralka_mark_unloaded",
-  last_unloaded_entity: "sensor.stiralka_last_unloaded_at",
+  laundry_present_entity: "",
+  mark_unloaded_entity: "",
+  last_unloaded_entity: "",
   // диагностика
-  activity_entity: "binary_sensor.stiralka_activity_detected",
-  power_activity_entity: "binary_sensor.kukhnia_stiralka_power_activity_detected",
-  current_activity_entity: "binary_sensor.kukhnia_stiralka_current_activity_detected",
-  last_activity_entity: "sensor.stiralka_last_activity",
-  last_power_activity_entity: "sensor.kukhnia_stiralka_last_power_activity",
-  last_current_activity_entity: "sensor.kukhnia_stiralka_last_current_activity",
-  final_spin_confidence_entity: "sensor.stiralka_final_spin_confidence",
-  final_spin_evidence_entity: "sensor.stiralka_final_spin_evidence_count",
+  activity_entity: "",
+  power_activity_entity: "",
+  current_activity_entity: "",
+  last_activity_entity: "",
+  last_power_activity_entity: "",
+  last_current_activity_entity: "",
+  final_spin_confidence_entity: "",
+  final_spin_evidence_entity: "",
   final_spin_confirmation_path_entity: "",
   spin_electrical_candidate_entity: "",
   spin_power_rolling_median_entity: "",
   spin_current_rolling_median_entity: "",
   spin_electrical_candidate_since_entity: ""
-  finish_since_entity: "sensor.stiralka_finish_inactivity_since",
-  finish_deadline_entity: "sensor.stiralka_finish_confirmation_deadline",
-  finish_remaining_entity: "sensor.stiralka_finish_confirmation_remaining",
-  last_state_change_entity: "sensor.stiralka_last_state_change",
-  last_transition_reason_entity: "sensor.stiralka_last_transition_reason",
-  last_rejected_entity: "sensor.stiralka_last_rejected_transition",
-  rejected_count_entity: "sensor.stiralka_rejected_transition_count",
+  finish_since_entity: "",
+  finish_deadline_entity: "",
+  finish_remaining_entity: "",
+  last_state_change_entity: "",
+  last_transition_reason_entity: "",
+  last_rejected_entity: "",
+  rejected_count_entity: "",
 };
 
 // Встроенный словарь для собственных подписей карточки (не имён сущностей).
@@ -74,6 +74,41 @@ const STRINGS = {
     duration: "Duration",
     show_more: "Diagnostics",
     unavailable: "unavailable",
+    editor_title: "Card title (optional)",
+    editor_icon: "Icon",
+    field_cycle_state: "Cycle state",
+    field_running: "Running",
+    field_final_spin: "Final spin detected",
+    field_finished: "Finished",
+    field_current_cycle_duration: "Current cycle duration",
+    field_last_cycle_duration: "Last cycle duration",
+    field_last_cycle_energy: "Last cycle energy (optional)",
+    field_power: "Current power",
+    field_current: "Current draw (optional)",
+    field_leak: "Leak (optional)",
+    field_laundry_present: "Laundry present (optional)",
+    field_mark_unloaded: "Mark unloaded button (optional)",
+    field_last_unloaded: "Last unloaded (optional)",
+    field_activity: "Activity detected",
+    field_power_activity: "Power activity",
+    field_current_activity: "Current activity",
+    field_last_activity: "Last activity",
+    field_last_power_activity: "Last power activity",
+    field_last_current_activity: "Last current activity",
+    field_final_spin_confidence: "Final spin confidence",
+    field_final_spin_evidence: "Final spin evidence count",
+    field_final_spin_confirmation_path: "Final spin confirmation path (optional)",
+    field_spin_electrical_candidate: "Electrical spin candidate (optional)",
+    field_spin_power_rolling_median: "Spin power rolling median (optional)",
+    field_spin_current_rolling_median: "Spin current rolling median (optional)",
+    field_spin_electrical_candidate_since: "Electrical spin candidate since (optional)",
+    field_finish_since: "Finish inactivity since",
+    field_finish_deadline: "Finish confirmation deadline",
+    field_finish_remaining: "Finish confirmation remaining",
+    field_last_state_change: "Last state change",
+    field_last_transition_reason: "Last transition reason",
+    field_last_rejected: "Last rejected transition",
+    field_rejected_count: "Rejected transition count",
   },
   ru: {
     diagnostics: "Диагностика",
@@ -88,44 +123,79 @@ const STRINGS = {
     duration: "Длительность",
     show_more: "Диагностика",
     unavailable: "недоступно",
+    editor_title: "Заголовок карточки (опц.)",
+    editor_icon: "Иконка",
+    field_cycle_state: "Состояние цикла",
+    field_running: "Стирка выполняется",
+    field_final_spin: "Финальный отжим",
+    field_finished: "Стирка завершена",
+    field_current_cycle_duration: "Текущая длительность цикла",
+    field_last_cycle_duration: "Длительность последнего цикла",
+    field_last_cycle_energy: "Энергия последнего цикла (опц.)",
+    field_power: "Текущая мощность",
+    field_current: "Потребляемый ток (опц.)",
+    field_leak: "Протечка (опц.)",
+    field_laundry_present: "Бельё в машине (опц.)",
+    field_mark_unloaded: "Кнопка «Бельё выгружено» (опц.)",
+    field_last_unloaded: "Последняя выгрузка (опц.)",
+    field_activity: "Обнаружена активность",
+    field_power_activity: "Активность по мощности",
+    field_current_activity: "Активность по току",
+    field_last_activity: "Последняя активность",
+    field_last_power_activity: "Последняя активность по мощности",
+    field_last_current_activity: "Последняя активность по току",
+    field_final_spin_confidence: "Уверенность в отжиме",
+    field_final_spin_evidence: "Количество признаков отжима",
+    field_final_spin_confirmation_path: "Путь подтверждения финального отжима (опц.)",
+    field_spin_electrical_candidate: "Электрический кандидат отжима (опц.)",
+    field_spin_power_rolling_median: "Скользящая медиана мощности отжима (опц.)",
+    field_spin_current_rolling_median: "Скользящая медиана тока отжима (опц.)",
+    field_spin_electrical_candidate_since: "Электрический кандидат отжима с (опц.)",
+    field_finish_since: "Отсутствие активности с",
+    field_finish_deadline: "Срок подтверждения завершения",
+    field_finish_remaining: "До подтверждения завершения",
+    field_last_state_change: "Последнее изменение состояния",
+    field_last_transition_reason: "Причина последнего перехода",
+    field_last_rejected: "Последний отклонённый переход",
+    field_rejected_count: "Отклонённых переходов",
   },
 };
 
 // Порядок и группировка сущностей в редакторе.
 const ENTITY_FIELDS = [
-  { key: "cycle_state_entity", label: "Состояние цикла", domains: ["sensor"] },
-  { key: "running_entity", label: "Стирка выполняется", domains: ["binary_sensor"] },
-  { key: "final_spin_entity", label: "Финальный отжим", domains: ["binary_sensor"] },
-  { key: "finished_entity", label: "Стирка завершена", domains: ["binary_sensor"] },
-  { key: "current_cycle_duration_entity", label: "Текущая длительность цикла", domains: ["sensor"] },
-  { key: "last_cycle_duration_entity", label: "Длительность последнего цикла", domains: ["sensor"] },
-  { key: "last_cycle_energy_entity", label: "Энергия последнего цикла (опц.)", domains: ["sensor"] },
-  { key: "power_entity", label: "Текущая мощность", domains: ["sensor"] },
-  { key: "current_entity", label: "Потребляемый ток (опц.)", domains: ["sensor"] },
-  { key: "leak_entity", label: "Протечка (опц.)", domains: ["binary_sensor"] },
-  { key: "laundry_present_entity", label: "Бельё в машине (опц.)", domains: ["binary_sensor"] },
-  { key: "mark_unloaded_entity", label: "Кнопка «Бельё выгружено» (опц.)", domains: ["button"] },
-  { key: "last_unloaded_entity", label: "Последняя выгрузка (опц.)", domains: ["sensor"] },
-  { key: "activity_entity", label: "Обнаружена активность", domains: ["binary_sensor"] },
-  { key: "power_activity_entity", label: "Активность по мощности", domains: ["binary_sensor"] },
-  { key: "current_activity_entity", label: "Активность по току", domains: ["binary_sensor"] },
-  { key: "last_activity_entity", label: "Последняя активность", domains: ["sensor"] },
-  { key: "last_power_activity_entity", label: "Последняя активность по мощности", domains: ["sensor"] },
-  { key: "last_current_activity_entity", label: "Последняя активность по току", domains: ["sensor"] },
-  { key: "final_spin_confidence_entity", label: "Уверенность в отжиме", domains: ["sensor"] },
-  { key: "final_spin_evidence_entity", label: "Признаков отжима", domains: ["sensor"] },
-  { key: "final_spin_confirmation_path_entity", label: "Путь подтверждения финального отжима (опц.)", domains: ["sensor"] },
-  { key: "spin_electrical_candidate_entity", label: "Электрический кандидат отжима (опц.)", domains: ["binary_sensor"] },
-  { key: "spin_power_rolling_median_entity", label: "Скользящая медиана мощности отжима (опц.)", domains: ["sensor"] },
-  { key: "spin_current_rolling_median_entity", label: "Скользящая медиана тока отжима (опц.)", domains: ["sensor"] },
-  { key: "spin_electrical_candidate_since_entity", label: "Электрический кандидат отжима с (опц.)", domains: ["sensor"] },
-  { key: "finish_since_entity", label: "Отсутствие активности с", domains: ["sensor"] },
-  { key: "finish_deadline_entity", label: "Срок подтверждения завершения", domains: ["sensor"] },
-  { key: "finish_remaining_entity", label: "До подтверждения завершения", domains: ["sensor"] },
-  { key: "last_state_change_entity", label: "Последнее изменение состояния", domains: ["sensor"] },
-  { key: "last_transition_reason_entity", label: "Причина последнего перехода", domains: ["sensor"] },
-  { key: "last_rejected_entity", label: "Последний отклонённый переход", domains: ["sensor"] },
-  { key: "rejected_count_entity", label: "Отклонённых переходов", domains: ["sensor"] },
+  { key: "cycle_state_entity", labelKey: "field_cycle_state", domains: ["sensor"] },
+  { key: "running_entity", labelKey: "field_running", domains: ["binary_sensor"] },
+  { key: "final_spin_entity", labelKey: "field_final_spin", domains: ["binary_sensor"] },
+  { key: "finished_entity", labelKey: "field_finished", domains: ["binary_sensor"] },
+  { key: "current_cycle_duration_entity", labelKey: "field_current_cycle_duration", domains: ["sensor"] },
+  { key: "last_cycle_duration_entity", labelKey: "field_last_cycle_duration", domains: ["sensor"] },
+  { key: "last_cycle_energy_entity", labelKey: "field_last_cycle_energy", domains: ["sensor"] },
+  { key: "power_entity", labelKey: "field_power", domains: ["sensor"] },
+  { key: "current_entity", labelKey: "field_current", domains: ["sensor"] },
+  { key: "leak_entity", labelKey: "field_leak", domains: ["binary_sensor"] },
+  { key: "laundry_present_entity", labelKey: "field_laundry_present", domains: ["binary_sensor"] },
+  { key: "mark_unloaded_entity", labelKey: "field_mark_unloaded", domains: ["button"] },
+  { key: "last_unloaded_entity", labelKey: "field_last_unloaded", domains: ["sensor"] },
+  { key: "activity_entity", labelKey: "field_activity", domains: ["binary_sensor"] },
+  { key: "power_activity_entity", labelKey: "field_power_activity", domains: ["binary_sensor"] },
+  { key: "current_activity_entity", labelKey: "field_current_activity", domains: ["binary_sensor"] },
+  { key: "last_activity_entity", labelKey: "field_last_activity", domains: ["sensor"] },
+  { key: "last_power_activity_entity", labelKey: "field_last_power_activity", domains: ["sensor"] },
+  { key: "last_current_activity_entity", labelKey: "field_last_current_activity", domains: ["sensor"] },
+  { key: "final_spin_confidence_entity", labelKey: "field_final_spin_confidence", domains: ["sensor"] },
+  { key: "final_spin_evidence_entity", labelKey: "field_final_spin_evidence", domains: ["sensor"] },
+  { key: "final_spin_confirmation_path_entity", labelKey: "field_final_spin_confirmation_path", domains: ["sensor"] },
+  { key: "spin_electrical_candidate_entity", labelKey: "field_spin_electrical_candidate", domains: ["binary_sensor"] },
+  { key: "spin_power_rolling_median_entity", labelKey: "field_spin_power_rolling_median", domains: ["sensor"] },
+  { key: "spin_current_rolling_median_entity", labelKey: "field_spin_current_rolling_median", domains: ["sensor"] },
+  { key: "spin_electrical_candidate_since_entity", labelKey: "field_spin_electrical_candidate_since", domains: ["sensor"] },
+  { key: "finish_since_entity", labelKey: "field_finish_since", domains: ["sensor"] },
+  { key: "finish_deadline_entity", labelKey: "field_finish_deadline", domains: ["sensor"] },
+  { key: "finish_remaining_entity", labelKey: "field_finish_remaining", domains: ["sensor"] },
+  { key: "last_state_change_entity", labelKey: "field_last_state_change", domains: ["sensor"] },
+  { key: "last_transition_reason_entity", labelKey: "field_last_transition_reason", domains: ["sensor"] },
+  { key: "last_rejected_entity", labelKey: "field_last_rejected", domains: ["sensor"] },
+  { key: "rejected_count_entity", labelKey: "field_rejected_count", domains: ["sensor"] },
 ];
 
 // Цвет акцента по состоянию цикла.
@@ -630,14 +700,31 @@ class LaundryMonitorCardEditor extends HTMLElement {
   }
 
   set hass(hass) {
+    const previousLanguage = this._hass && this._hass.language;
     this._hass = hass;
     if (!this._built && this._config) this._buildForm();
+    else if (this._built && previousLanguage !== hass.language) {
+      this._updateTranslations();
+    }
   }
 
   connectedCallback() {
     if (this._config && this._hass && !this._built) this._buildForm();
   }
-
+  _t(key) {
+    const lang = (this._hass && this._hass.language) || "en";
+    const dict = STRINGS[lang] || STRINGS[lang.split("-")[0]] || STRINGS.en;
+    return dict[key] || STRINGS.en[key] || key;
+  }
+  _updateTranslations() {
+    if (!this._built) return;
+    if (this._titleLabel) this._titleLabel.textContent = this._t("editor_title");
+    if (this._iconLabel) this._iconLabel.textContent = this._t("editor_icon");
+    ENTITY_FIELDS.forEach((field) => {
+      const label = this._fieldLabels && this._fieldLabels[field.key];
+      if (label) label.textContent = this._t(field.labelKey);
+    });
+  }
   _buildForm() {
     this.innerHTML = "";
     const style = document.createElement("style");
@@ -661,7 +748,10 @@ class LaundryMonitorCardEditor extends HTMLElement {
     // title
     const titleField = document.createElement("div");
     titleField.className = "lm-editor-field";
-    titleField.innerHTML = `<div class="lm-editor-label">Заголовок карточки (опц.)</div>`;
+    const titleLabel = document.createElement("div");
+    titleLabel.className = "lm-editor-label";
+    titleLabel.textContent = this._t("editor_title");
+    titleField.appendChild(titleLabel);
     const titleInput = document.createElement("input");
     titleInput.type = "text";
     titleInput.value = this._config.title || "";
@@ -671,12 +761,16 @@ class LaundryMonitorCardEditor extends HTMLElement {
     });
     titleField.appendChild(titleInput);
     wrap.appendChild(titleField);
+    this._titleLabel = titleLabel;
     this._titleInput = titleInput;
 
     // icon
     const iconField = document.createElement("div");
     iconField.className = "lm-editor-field";
-    iconField.innerHTML = `<div class="lm-editor-label">Иконка</div>`;
+    const iconLabel = document.createElement("div");
+    iconLabel.className = "lm-editor-label";
+    iconLabel.textContent = this._t("editor_icon");
+    iconField.appendChild(iconLabel);
     const iconInput = document.createElement("input");
     iconInput.type = "text";
     iconInput.value = this._config.icon || "";
@@ -686,15 +780,17 @@ class LaundryMonitorCardEditor extends HTMLElement {
     });
     iconField.appendChild(iconInput);
     wrap.appendChild(iconField);
+    this._iconLabel = iconLabel;
     this._iconInput = iconInput;
 
     // entity pickers
     this._pickers = {};
+    this._fieldLabels = {};
     ENTITY_FIELDS.forEach((field) => {
       const fieldWrap = document.createElement("div");
       const label = document.createElement("div");
       label.className = "lm-editor-label";
-      label.textContent = field.label;
+      label.textContent = this._t(field.labelKey);
       fieldWrap.appendChild(label);
 
       const picker = document.createElement("ha-entity-picker");
@@ -711,6 +807,7 @@ class LaundryMonitorCardEditor extends HTMLElement {
       fieldWrap.appendChild(picker);
       wrap.appendChild(fieldWrap);
       this._pickers[field.key] = picker;
+      this._fieldLabels[field.key] = label;
     });
 
     this.appendChild(wrap);
