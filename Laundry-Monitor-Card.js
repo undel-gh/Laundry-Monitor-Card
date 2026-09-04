@@ -13,7 +13,7 @@
  *    следует языку интерфейса HA (интеграция поставляет en/ru). Немногочисленные
  *    собственные подписи карточки берутся из встроенного словаря по hass.language.
  */
-
+const CARD_VERSION = "1.0.4-rc2";
 const CARD_TAG = "laundry-monitor-card";
 const EDITOR_TAG = "laundry-monitor-card-editor";
 
@@ -73,6 +73,10 @@ const STRINGS = {
     duration: "Duration",
     show_more: "Diagnostics",
     unavailable: "unavailable",
+    editor_group_primary: "Primary entities",
+    editor_group_tracking: "Laundry tracking",
+    editor_group_diagnostics: "Diagnostics",
+    configuration_required: "Configure at least Cycle state or Running.",
     editor_title: "Card title (optional)",
     editor_icon: "Icon",
     field_cycle_state: "Cycle state",
@@ -123,6 +127,10 @@ const STRINGS = {
     duration: "Длительность",
     show_more: "Диагностика",
     unavailable: "недоступно",
+    editor_group_primary: "Основные сущности",
+    editor_group_tracking: "Трекинг белья",
+    editor_group_diagnostics: "Диагностика",
+    configuration_required: "Настройте хотя бы «Состояние цикла» или «Стирка выполняется».",
     editor_title: "Заголовок карточки (опц.)",
     editor_icon: "Иконка",
     field_cycle_state: "Состояние цикла",
@@ -199,13 +207,73 @@ const ENTITY_FIELDS = [
   { key: "rejected_count_entity", labelKey: "field_rejected_count", domains: ["sensor"] },
 ];
 
-const EDITOR_SCHEMA = [
-  { name: "title", selector: { text: {} } },
-  { name: "icon", selector: { icon: {} } },
-  ...ENTITY_FIELDS.map((field) => ({
-    name: field.key,
-    selector: { entity: { domain: field.domains } },
-  })),
+const PRIMARY_ENTITY_KEYS = [
+  "cycle_state_entity",
+  "running_entity",
+  "final_spin_entity",
+  "finished_entity",
+  "current_cycle_duration_entity",
+  "last_cycle_duration_entity",
+  "last_cycle_energy_entity",
+  "power_entity",
+  "current_entity",
+  "leak_entity",
+ ];
+
+const TRACKING_ENTITY_KEYS = [
+  "laundry_present_entity",
+  "mark_unloaded_entity",
+  "last_unloaded_entity",
+];
+
+const DIAGNOSTIC_GROUPS = [
+  {
+    labelKey: "activity",
+    keys: [
+      "activity_entity",
+      "power_activity_entity",
+      "current_activity_entity",
+      "last_activity_entity",
+      "last_power_activity_entity",
+      "last_current_activity_entity",
+    ],
+  },
+  {
+    labelKey: "final_spin",
+    keys: [
+      "final_spin_confidence_entity",
+      "final_spin_evidence_entity",
+      "final_spin_confirmation_path_entity",
+    ],
+  },
+  {
+    labelKey: "electrical_hybrid",
+    keys: [
+      "spin_electrical_candidate_entity",
+      "spin_power_rolling_median_entity",
+      "spin_current_rolling_median_entity",
+      "spin_electrical_candidate_since_entity",
+    ],
+  },
+  { labelKey: "timing", keys: ["last_cycle_energy_entity"] },
+  { labelKey: "tracking", keys: ["last_unloaded_entity"] },
+  {
+    labelKey: "completion",
+    keys: ["finish_since_entity", "finish_deadline_entity", "finish_remaining_entity"],
+  },
+  {
+    labelKey: "transitions",
+    keys: [
+      "last_state_change_entity",
+      "last_transition_reason_entity",
+      "last_rejected_entity",
+      "rejected_count_entity",
+    ],
+  },
+];
+
+const DIAGNOSTIC_ENTITY_KEYS = [
+  ...new Set(DIAGNOSTIC_GROUPS.flatMap((group) => group.keys)),
 ];
 
 const EDITOR_LABEL_KEYS = {
@@ -225,6 +293,10 @@ const STATE_COLORS = {
   error: "var(--error-color, #db4437)",
 };
 
+function fmtState(hass, stateObj) {
+  return hass.formatEntityState(stateObj);
+}
+
 function isUnavailable(st) {
   return !st || st.state === "unavailable" || st.state === "unknown" || st.state === "";
 }
@@ -232,22 +304,14 @@ function isUnavailable(st) {
 function fmtDuration(stateObj, hass) {
   if (isUnavailable(stateObj)) return "—";
   const value = Number(stateObj.state);
-  if (!Number.isFinite(value)) {
-    return hass && hass.formatEntityState
-      ? hass.formatEntityState(stateObj)
-      : stateObj.state;
-  }
+  if (!Number.isFinite(value)) return fmtState(hass, stateObj);
 
   const unit = String(stateObj.attributes?.unit_of_measurement || "s").toLowerCase();
   let seconds;
   if (["s", "sec", "second", "seconds"].includes(unit)) seconds = value;
   else if (["min", "minute", "minutes"].includes(unit)) seconds = value * 60;
   else if (["h", "hr", "hour", "hours"].includes(unit)) seconds = value * 3600;
-  else {
-    return hass && hass.formatEntityState
-      ? hass.formatEntityState(stateObj)
-      : stateObj.state;
-  }
+  else return fmtState(hass, stateObj);
 
   const s = Math.max(0, Math.round(seconds));
   const h = Math.floor(s / 3600);
@@ -381,6 +445,11 @@ class LaundryMonitorCard extends HTMLElement {
 
   setConfig(config) {
     if (!config) throw new Error("Некорректная конфигурация карточки");
+    if (!config.cycle_state_entity && !config.running_entity) {
+      throw new Error(
+        "Laundry Monitor Card: configure cycle_state_entity or running_entity."
+      );
+    }
     this._config = { ...DEFAULT_CONFIG, ...config };
     this._trackedEntityIds = [
       ...new Set(ENTITY_FIELDS.map((field) => this._config[field.key]).filter(Boolean)),
@@ -414,14 +483,17 @@ class LaundryMonitorCard extends HTMLElement {
   }
 
   getCardSize() {
-    return 5;
+    const diagnosticsOpen = this._els?.diag?.classList.contains("open");
+    if (!diagnosticsOpen) return 3;
+    const rows = this._diagRows?.length || 0;
+    return 4 + Math.ceil(rows / 2);
   }
 
   getGridOptions() {
     return {
-      columns: 6,
-      rows: 3,
-      min_columns: 3,
+      columns: 12,
+      rows: "auto",
+      min_columns: 6,
       min_rows: 2,
     };
   }
@@ -580,9 +652,11 @@ class LaundryMonitorCard extends HTMLElement {
       chipRunning,
       chipSpin,
       chipFinished,
+      durMetric,
       durVal: durMetric.querySelector("span"),
       ampMetric,
       ampVal: ampMetric.querySelector("span"),
+      pwrMetric,
       pwrVal: pwrMetric.querySelector("span"),
       tracking,
       present,
@@ -600,66 +674,16 @@ class LaundryMonitorCard extends HTMLElement {
 
   _buildDiag() {
     const cfg = this._config;
-    const groups = [
-      {
-        label: this._t("activity"),
-        keys: [
-          "activity_entity",
-          "power_activity_entity",
-          "current_activity_entity",
-          "last_activity_entity",
-          "last_power_activity_entity",
-          "last_current_activity_entity",
-        ],
-      },
-      {
-        label: this._t("final_spin"),
-        keys: [
-          "final_spin_confidence_entity",
-          "final_spin_evidence_entity",
-          "final_spin_confirmation_path_entity",
-        ],
-      },
-      {
-        label: this._t("electrical_hybrid"),
-        keys: [
-          "spin_electrical_candidate_entity",
-          "spin_power_rolling_median_entity",
-          "spin_current_rolling_median_entity",
-          "spin_electrical_candidate_since_entity",
-        ],
-       },
-      {
-        label: this._t("timing"),
-        keys: ["last_cycle_energy_entity"],
-      },
-      {
-        label: this._t("tracking"),
-        keys: ["last_unloaded_entity"],
-      },
-      {
-        label: this._t("completion"),
-        keys: ["finish_since_entity", "finish_deadline_entity", "finish_remaining_entity"],
-      },
-      {
-        label: this._t("transitions"),
-        keys: [
-          "last_state_change_entity",
-          "last_transition_reason_entity",
-          "last_rejected_entity",
-          "rejected_count_entity",
-        ],
-      },
-    ];
+    
     const wasOpen = this._els.diag.classList.contains("open");
     this._els.diag.innerHTML = "";
     this._diagRows = [];
-    groups.forEach((g) => {
+    DIAGNOSTIC_GROUPS.forEach((g) => {
       const present = g.keys.filter((k) => cfg[k] && this._hass.states[cfg[k]]);
       if (!present.length) return;
       const sec = document.createElement("div");
       sec.className = "lm-diag-section";
-      sec.textContent = g.label;
+      sec.textContent = this._t(g.labelKey);
       this._els.diag.appendChild(sec);
       present.forEach((k) => {
         const entityId = cfg[k];
@@ -710,9 +734,7 @@ class LaundryMonitorCard extends HTMLElement {
     let stateText = "—";
     let accent = "var(--state-icon-color)";
     if (!isUnavailable(stateObj)) {
-      stateText = hass.formatEntityState
-        ? hass.formatEntityState(stateObj)
-        : stateObj.state;
+      stateText = fmtState(hass, stateObj);
       accent = STATE_COLORS[stateObj.state] || "var(--state-icon-color)";
     } else {
       stateText = this._t("unavailable");
@@ -744,36 +766,37 @@ class LaundryMonitorCard extends HTMLElement {
     // duration: current only while a cycle is active; otherwise last completed cycle
     const curDur = hass.states[cfg.current_cycle_duration_entity];
     const lastDur = hass.states[cfg.last_cycle_duration_entity];
+    const isOn = (entityId) => hass.states[entityId]?.state === "on";
     const activeCycle =
-      stateObj && (stateObj.state === "running" || stateObj.state === "final_spin");
+      isOn(cfg.running_entity) ||
+      isOn(cfg.final_spin_entity) ||
+      (stateObj &&
+        (stateObj.state === "running" || stateObj.state === "final_spin"));
     const durSrc =
       activeCycle && !isUnavailable(curDur)
         ? curDur
         : !isUnavailable(lastDur)
         ? lastDur
         : null;
+    els.durMetric.hidden =
+      !cfg.current_cycle_duration_entity && !cfg.last_cycle_duration_entity;
     els.durVal.textContent = durSrc ? fmtDuration(durSrc, hass) : "—";
 
     // current draw (optional)
     const curSt = hass.states[cfg.current_entity];
+    els.ampMetric.hidden = !cfg.current_entity;
     if (cfg.current_entity && curSt) {
-      els.ampMetric.style.display = "";
       els.ampVal.textContent = isUnavailable(curSt)
         ? "—"
-        : hass.formatEntityState
-        ? hass.formatEntityState(curSt)
-        : `${curSt.state} A`;
-    } else {
-      els.ampMetric.style.display = "none";
+        : fmtState(hass, curSt);
     }
 
     // power
     const pwrSt = hass.states[cfg.power_entity];
+    els.pwrMetric.hidden = !cfg.power_entity;
     els.pwrVal.textContent =
       pwrSt && !isUnavailable(pwrSt)
-        ? hass.formatEntityState
-          ? hass.formatEntityState(pwrSt)
-          : `${pwrSt.state} W`
+        ? fmtState(hass, pwrSt)
         : "—";
 
     // tracking block — показываем, только если сущности доступны
@@ -789,7 +812,7 @@ class LaundryMonitorCard extends HTMLElement {
       const presentName = this._name(cfg.laundry_present_entity, this._t("tracking"));
       els.presentText.textContent =
         presentSt && !isUnavailable(presentSt)
-          ? `${presentName}: ${hass.formatEntityState ? hass.formatEntityState(presentSt) : presentSt.state}`
+          ? `${presentName}: ${fmtState(hass, presentSt)}`
           : presentName;
       els.unloadBtn.disabled = !unloadSt || isUnavailable(unloadSt);
       els.unloadBtnText.textContent = this._t("mark_unloaded");
@@ -807,11 +830,7 @@ class LaundryMonitorCard extends HTMLElement {
         const st = hass.states[r.entityId];
         r.name.textContent = this._name(r.entityId, r.entityId);
         r.val.textContent =
-          st && !isUnavailable(st)
-            ? hass.formatEntityState
-              ? hass.formatEntityState(st)
-              : st.state
-            : "—";
+          st && !isUnavailable(st) ? fmtState(hass, st) : "—";
       });
     }
   }
@@ -827,11 +846,17 @@ class LaundryMonitorCard extends HTMLElement {
     )
       .catch((error) => {
         console.error("Laundry Monitor Card: mark unloaded failed", error);
-        if (button) button.title = this._t("action_failed");
+        this.dispatchEvent(
+          new CustomEvent("hass-notification", {
+            detail: { message: this._t("action_failed") },
+            bubbles: true,
+            composed: true,
+          })
+        );
       })
       .finally(() => {
         if (button) {
-          const st = hass.states[cfg.mark_unloaded_entity];
+          const st = this._hass?.states[cfg.mark_unloaded_entity];
           button.disabled = !st || isUnavailable(st);
         }
       });
@@ -864,8 +889,7 @@ class LaundryMonitorCardEditor extends HTMLElement {
     if (!this._form) return;
     this._form.hass = hass;
     if (previousLanguage !== hass.language) {
-      // New array identity asks ha-form to recompute labels.
-      this._form.schema = [...EDITOR_SCHEMA];
+      this._form.schema = this._editorSchema();
     }    
   }
 
@@ -883,16 +907,56 @@ class LaundryMonitorCardEditor extends HTMLElement {
     return key ? this._t(key) : schema.name;
   }
 
+  _fieldsFor(keys) {
+    const allowed = new Set(keys);
+    return ENTITY_FIELDS.filter((field) => allowed.has(field.key)).map((field) => ({
+      name: field.key,
+      selector: { entity: { domain: field.domains } },
+    }));
+  }
+
+  _editorSchema() {
+    return [
+      { name: "title", selector: { text: {} } },
+      { name: "icon", selector: { icon: {} } },
+      {
+        name: "",
+        type: "expandable",
+        title: this._t("editor_group_primary"),
+        schema: this._fieldsFor(PRIMARY_ENTITY_KEYS),
+      },
+      {
+        name: "",
+        type: "expandable",
+        title: this._t("editor_group_tracking"),
+        schema: this._fieldsFor(TRACKING_ENTITY_KEYS),
+      },
+      {
+        name: "",
+        type: "expandable",
+        title: this._t("editor_group_diagnostics"),
+        schema: this._fieldsFor(DIAGNOSTIC_ENTITY_KEYS),
+      },
+    ];
+  }
+
+  _formData() {
+    const data = compactConfig(this._config);
+    delete data.type;
+    return data;
+  }
+
   _buildForm() {
     if (!this._hass || !this._config || this._form) return;
     const form = document.createElement("ha-form");
     form.hass = this._hass;
-    form.data = compactConfig(this._config);
-    form.schema = EDITOR_SCHEMA;
+    form.data = this._formData();
+    form.schema = this._editorSchema();
     form.computeLabel = (schema) => this._computeLabel(schema);
     form.addEventListener("value-changed", (event) => {
       event.stopPropagation();
       const value = event.detail?.value || {};
+      this._lastFormData = JSON.stringify(value);
       this._config = {
         ...DEFAULT_CONFIG,
         ...value,
@@ -911,7 +975,11 @@ class LaundryMonitorCardEditor extends HTMLElement {
       if (this._hass && this.isConnected) this._buildForm();
       return;
     }
-    this._form.data = compactConfig(this._config);
+    const next = this._formData();
+    const serialized = JSON.stringify(next);
+    if (serialized === this._lastFormData) return;
+    this._form.data = next;
+    this._lastFormData = serialized;
   }
 
   _fireConfigChanged() {
@@ -943,3 +1011,5 @@ window.customCards.push({
     "Lovelace card for Laundry Monitor: cycle state, status, power, laundry tracking and diagnostics.",
   preview: false,
 });
+
+console.info(`%c Laundry Monitor Card %c ${CARD_VERSION} `, "color:#03a9f4;font-weight:bold", "");
