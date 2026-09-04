@@ -60,7 +60,7 @@ const DEFAULT_CONFIG = {
 
 // Встроенный словарь для собственных подписей карточки (не имён сущностей).
 const STRINGS = {
-  en: {    
+  en: {
     activity: "Activity",
     final_spin: "Final spin",
     electrical_hybrid: "Electrical / hybrid",
@@ -113,7 +113,7 @@ const STRINGS = {
     field_rejected_count: "Rejected transition count",
     action_failed: "Action failed",
   },
-  ru: {    
+  ru: {
     activity: "Активность",
     final_spin: "Финальный отжим",
     electrical_hybrid: "Электрика / hybrid",
@@ -658,7 +658,7 @@ class LaundryMonitorCard extends HTMLElement {
     const toggleDiagnostics = () => {
       const open = diag.classList.toggle("open");
       diagToggle.classList.toggle("open", open);
-      diagToggle.setAttribute("aria-expanded", String(open));      
+      diagToggle.setAttribute("aria-expanded", String(open));
     };
     diagToggle.addEventListener("click", toggleDiagnostics);
     diagToggle.addEventListener("keydown", (event) => {
@@ -751,7 +751,7 @@ class LaundryMonitorCard extends HTMLElement {
 
   // ---- точечное обновление (без пересоздания DOM) ----
   _update() {
-    const hass = this._hass;    
+    const hass = this._hass;
     const els = this._els;
     if (!hass || !els) return;
     if (this._configurationIncomplete) {
