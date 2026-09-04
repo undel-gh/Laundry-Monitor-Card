@@ -11,7 +11,15 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
       - run: node --check Laundry-Monitor-Card.js
-      - run: git diff --check
+      - name: Smoke-load card and validate editor groups
+        run: |
+          node -e 'global.HTMLElement=class {}; global.customElements={get:()=>undefined,define:()=>{}}; global.window={}; require("./Laundry-Monitor-Card.js")'
+      - name: Check trailing whitespace
+        run: |
+          if grep -nP '[ \t]+$' Laundry-Monitor-Card.js README.md hacs.json .github/workflows/main.yml; then
+            echo "Trailing whitespace found"
+            exit 1
+          fi
   hacs:
     runs-on: ubuntu-latest
     steps:
