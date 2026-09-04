@@ -10,7 +10,7 @@ current_cycle_duration_entity: sensor.stiralka_current_cycle_duration
 last_cycle_duration_entity: sensor.stiralka_last_cycle_duration
 last_cycle_energy_entity: ""            # нет датчика энергии — оставить пустым
 power_entity: sensor.stiralka_current_power
-current_entity: sensor.kukhnia_stiralka_current_draw
+current_entity: sensor.stiralka_current_draw
 leak_entity: binary_sensor.stiralka_leak
 # --- трекинг белья (показывается, только когда сущности доступны) ---
 laundry_present_entity: binary_sensor.stiralka_laundry_present
@@ -18,13 +18,20 @@ mark_unloaded_entity: button.stiralka_mark_unloaded
 last_unloaded_entity: sensor.stiralka_last_unloaded_at
 # --- диагностика (сворачиваемый блок) ---
 activity_entity: binary_sensor.stiralka_activity_detected
-power_activity_entity: binary_sensor.kukhnia_stiralka_power_activity_detected
-current_activity_entity: binary_sensor.kukhnia_stiralka_current_activity_detected
+power_activity_entity: binary_sensor.stiralka_power_activity_detected
+current_activity_entity: binary_sensor.stiralka_current_activity_detected
 last_activity_entity: sensor.stiralka_last_activity
-last_power_activity_entity: sensor.kukhnia_stiralka_last_power_activity
-last_current_activity_entity: sensor.kukhnia_stiralka_last_current_activity
+last_power_activity_entity: sensor.stiralka_last_power_activity
+last_current_activity_entity: sensor.stiralka_last_current_activity
 final_spin_confidence_entity: sensor.stiralka_final_spin_confidence
 final_spin_evidence_entity: sensor.stiralka_final_spin_evidence_count
+# Следующие electrical/hybrid entities отключены в интеграции по умолчанию.
+# Сначала включите нужные сущности на странице устройства Laundry Monitor.
+final_spin_confirmation_path_entity: sensor.stiralka_final_spin_confirmation_path
+spin_electrical_candidate_entity: binary_sensor.stiralka_electrical_spin_candidate
+spin_power_rolling_median_entity: sensor.stiralka_spin_power_rolling_median
+spin_current_rolling_median_entity: sensor.stiralka_spin_current_rolling_median
+spin_electrical_candidate_since_entity: sensor.stiralka_electrical_spin_candidate_since
 finish_since_entity: sensor.stiralka_finish_inactivity_since
 finish_deadline_entity: sensor.stiralka_finish_confirmation_deadline
 finish_remaining_entity: sensor.stiralka_finish_confirmation_remaining
