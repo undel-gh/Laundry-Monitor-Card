@@ -61,6 +61,10 @@ diagnostics) are simply hidden if missing. A full example is in
 New cards do not assume any entity IDs. Select the entities that belong to your
 Laundry Monitor device in the visual editor or configure them explicitly in YAML.
 The visual editor follows the Home Assistant interface language (English/Russian).
+
+The card and its visual editor use isolated Shadow DOM styles. User-provided icon
+configuration is applied as an element attribute rather than interpolated into HTML.
+Diagnostics update dynamically when configured entities appear or disappear.
 ```yaml
 type: custom:laundry-monitor-card
 title: Washing Machine
@@ -155,6 +159,11 @@ diagnostics) при отсутствии просто скрываются. По
 Новые карточки не предполагают никаких заранее заданных entity ID. Выберите
 сущности своего устройства Laundry Monitor в визуальном редакторе или задайте
 их явно в YAML. Язык визуального редактора следует языку интерфейса Home Assistant.
+
+Стили карточки и визуального редактора изолированы через Shadow DOM. Пользовательская
+настройка иконки назначается как атрибут элемента и не подставляется в HTML.
+Диагностические строки динамически обновляются при появлении или исчезновении
+настроенных сущностей.
 ```yaml
 type: custom:laundry-monitor-card
 title: Стиралка
