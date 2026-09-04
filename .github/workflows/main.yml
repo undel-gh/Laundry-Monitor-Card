@@ -11,6 +11,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
       - run: node --check Laundry-Monitor-Card.js
+      - run: git diff --check
   hacs:
     runs-on: ubuntu-latest
     steps:
