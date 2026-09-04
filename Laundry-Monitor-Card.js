@@ -923,7 +923,7 @@ class LaundryMonitorCardEditor extends HTMLElement {
     this._form.hass = hass;
     if (previousLanguage !== hass.language) {
       this._form.schema = this._editorSchema();
-    }    
+    }
   }
   connectedCallback() {
     if (this._config && this._hass && !this._form) this._buildForm();
