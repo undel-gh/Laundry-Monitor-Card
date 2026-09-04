@@ -4,11 +4,10 @@
  *
  * Особенности реализации:
  *  - Чистый Custom Element без внешних зависимостей (кроме встроенных
- *    ha-card / ha-icon / ha-entity-picker из самого Home Assistant).
+ *    ha-card / ha-icon / ha-form из самого Home Assistant).
  *  - DOM карточки строится ОДИН РАЗ (при первом получении hass), дальше только
  *    точечно обновляются значения — это исключает лишние перерисовки.
- *  - DOM редактора строится ОДИН РАЗ. hass присваивается пикерам сущностей
- *    (ha-entity-picker) только при первом построении редактора.
+ *  - Визуальный редактор использует нативный ha-form и HA selectors.
  *  - Поддержка переводов: подписи сущностей берутся из их friendly_name, а
  *    значение состояния цикла — через hass.formatEntityState(), поэтому текст
  *    следует языку интерфейса HA (интеграция поставляет en/ru). Немногочисленные
@@ -200,6 +199,23 @@ const ENTITY_FIELDS = [
   { key: "rejected_count_entity", labelKey: "field_rejected_count", domains: ["sensor"] },
 ];
 
+const EDITOR_SCHEMA = [
+  { name: "title", selector: { text: {} } },
+  { name: "icon", selector: { icon: {} } },
+  ...ENTITY_FIELDS.map((field) => ({
+    name: field.key,
+    selector: { entity: { domain: field.domains } },
+  })),
+];
+
+const EDITOR_LABEL_KEYS = {
+  title: "editor_title",
+  icon: "editor_icon",
+  ...Object.fromEntries(
+    ENTITY_FIELDS.map((field) => [field.key, field.labelKey])
+  ),
+};
+
 // Цвет акцента по состоянию цикла.
 const STATE_COLORS = {
   running: "var(--info-color, #2196f3)",
@@ -366,6 +382,9 @@ class LaundryMonitorCard extends HTMLElement {
   setConfig(config) {
     if (!config) throw new Error("Некорректная конфигурация карточки");
     this._config = { ...DEFAULT_CONFIG, ...config };
+    this._trackedEntityIds = [
+      ...new Set(ENTITY_FIELDS.map((field) => this._config[field.key]).filter(Boolean)),
+    ];
     this._built = false;
     if (this._hass) this._render();
   }
@@ -388,10 +407,7 @@ class LaundryMonitorCard extends HTMLElement {
 
   _relevantStatesChanged(previous, current) {
     if (!previous || previous.language !== current.language) return true;
-    const ids = new Set(
-      ENTITY_FIELDS.map((field) => this._config[field.key]).filter(Boolean)
-    );
-    for (const entityId of ids) {
+    for (const entityId of this._trackedEntityIds || []) {
       if (previous.states[entityId] !== current.states[entityId]) return true;
     }
     return false;
@@ -401,6 +417,15 @@ class LaundryMonitorCard extends HTMLElement {
     return 5;
   }
 
+  getGridOptions() {
+    return {
+      columns: 6,
+      rows: 3,
+      min_columns: 3,
+      min_rows: 2,
+    };
+  }
+  
   connectedCallback() {
     if (this._config && this._hass && !this._built) this._render();
   }
@@ -815,8 +840,7 @@ class LaundryMonitorCard extends HTMLElement {
 
 // ------------------------------------------------------------------
 // РЕДАКТОР КАРТОЧКИ
-// DOM строится один раз. hass присваивается ha-entity-picker'ам только при
-// первом построении — далее пикеры не пересоздаются и не сбрасываются.
+// Использует нативный ha-form с text/icon/entity selectors.
 // ------------------------------------------------------------------
 class LaundryMonitorCardEditor extends HTMLElement {
   constructor() {
@@ -826,149 +850,73 @@ class LaundryMonitorCardEditor extends HTMLElement {
 
   setConfig(config) {
     this._config = { ...DEFAULT_CONFIG, ...config };
-    if (this._built) this._syncFormValues();
-    else if (this._hass) this._buildForm();
+    this._syncForm();
   }
 
   set hass(hass) {
-    const previousLanguage = this._hass && this._hass.language;
+    const previousLanguage = this._hass?.language;
     this._hass = hass;
     if (!hass) return;
-    if (!this._built && this._config) this._buildForm();
-    else if (this._built && previousLanguage !== hass.language) {
-      this._updateTranslations();
-    }
-    if (this._built && this._pickers) {
-      Object.values(this._pickers).forEach((picker) => {
-        picker.hass = hass;
-      });
-    }
+    if (!this._form && this._config) {
+      this._buildForm();
+      return;
+     }
+    if (!this._form) return;
+    this._form.hass = hass;
+    if (previousLanguage !== hass.language) {
+      // New array identity asks ha-form to recompute labels.
+      this._form.schema = [...EDITOR_SCHEMA];
+    }    
   }
 
   connectedCallback() {
-    if (this._config && this._hass && !this._built) this._buildForm();
+    if (this._config && this._hass && !this._form) this._buildForm();
   }
   _t(key) {
     const lang = (this._hass && this._hass.language) || "en";
     const dict = STRINGS[lang] || STRINGS[lang.split("-")[0]] || STRINGS.en;
     return dict[key] || STRINGS.en[key] || key;
   }
-  _updateTranslations() {
-    if (!this._built) return;
-    if (this._titleLabel) this._titleLabel.textContent = this._t("editor_title");
-    if (this._iconLabel) this._iconLabel.textContent = this._t("editor_icon");
-    ENTITY_FIELDS.forEach((field) => {
-      const label = this._fieldLabels && this._fieldLabels[field.key];
-      if (label) label.textContent = this._t(field.labelKey);
-    });
+
+  _computeLabel(schema) {
+    const key = EDITOR_LABEL_KEYS[schema.name];
+    return key ? this._t(key) : schema.name;
   }
+
   _buildForm() {
-    const root = this.shadowRoot;
-    root.innerHTML = "";
-    const style = document.createElement("style");
-    style.textContent = `
-      .lm-editor { display: flex; flex-direction: column; gap: 10px; padding: 8px 0; }
-      .lm-editor-field input {
-        width: 100%; padding: 10px; border-radius: 8px;
-        border: 1px solid var(--divider-color);
-        background: var(--card-background-color);
-        color: var(--primary-text-color); font: inherit;
-      }
-      .lm-editor-label {
-        font-size: 0.8em; color: var(--secondary-text-color); margin-bottom: 2px;
-      }
-    `;
-    root.appendChild(style);
-
-    const wrap = document.createElement("div");
-    wrap.className = "lm-editor";
-
-    // title
-    const titleField = document.createElement("div");
-    titleField.className = "lm-editor-field";
-    const titleLabel = document.createElement("div");
-    titleLabel.className = "lm-editor-label";
-    titleLabel.textContent = this._t("editor_title");
-    titleField.appendChild(titleLabel);
-    const titleInput = document.createElement("input");
-    titleInput.type = "text";
-    titleInput.value = this._config.title || "";
-    titleInput.addEventListener("change", () => {
-      this._config = { ...this._config, title: titleInput.value };
+    if (!this._hass || !this._config || this._form) return;
+    const form = document.createElement("ha-form");
+    form.hass = this._hass;
+    form.data = compactConfig(this._config);
+    form.schema = EDITOR_SCHEMA;
+    form.computeLabel = (schema) => this._computeLabel(schema);
+    form.addEventListener("value-changed", (event) => {
+      event.stopPropagation();
+      const value = event.detail?.value || {};
+      this._config = {
+        ...DEFAULT_CONFIG,
+        ...value,
+        type: value.type || this._config.type || `custom:${CARD_TAG}`,
+      };
       this._fireConfigChanged();
     });
-    titleField.appendChild(titleInput);
-    wrap.appendChild(titleField);
-    this._titleLabel = titleLabel;
-    this._titleInput = titleInput;
 
-    // icon
-    const iconField = document.createElement("div");
-    iconField.className = "lm-editor-field";
-    const iconLabel = document.createElement("div");
-    iconLabel.className = "lm-editor-label";
-    iconLabel.textContent = this._t("editor_icon");
-    iconField.appendChild(iconLabel);
-    const iconInput = document.createElement("input");
-    iconInput.type = "text";
-    iconInput.value = this._config.icon || "";
-    iconInput.addEventListener("change", () => {
-      this._config = { ...this._config, icon: iconInput.value };
-      this._fireConfigChanged();
-    });
-    iconField.appendChild(iconInput);
-    wrap.appendChild(iconField);
-    this._iconLabel = iconLabel;
-    this._iconInput = iconInput;
-
-    // entity pickers
-    this._pickers = {};
-    this._fieldLabels = {};
-    ENTITY_FIELDS.forEach((field) => {
-      const fieldWrap = document.createElement("div");
-      const label = document.createElement("div");
-      label.className = "lm-editor-label";
-      label.textContent = this._t(field.labelKey);
-      fieldWrap.appendChild(label);
-
-      const picker = document.createElement("ha-entity-picker");
-      picker.hass = this._hass;
-      picker.allowCustomEntity = true;
-      if (field.domains) picker.includeDomains = field.domains;
-      picker.value = this._config[field.key] || "";
-      picker.addEventListener("value-changed", (ev) => {
-        ev.stopPropagation();
-        this._config = { ...this._config, [field.key]: ev.detail.value };
-        this._fireConfigChanged();
-      });
-
-      fieldWrap.appendChild(picker);
-      wrap.appendChild(fieldWrap);
-      this._pickers[field.key] = picker;
-      this._fieldLabels[field.key] = label;
-    });
-
-    root.appendChild(wrap);
-    this._built = true;
+    this.shadowRoot.replaceChildren(form);
+    this._form = form;
   }
 
-  _syncFormValues() {
-    if (!this._built) return;
-    if (this._titleInput && this._titleInput.value !== (this._config.title || "")) {
-      this._titleInput.value = this._config.title || "";
+
+  _syncForm() {
+    if (!this._form) {
+      if (this._hass && this.isConnected) this._buildForm();
+      return;
     }
-    if (this._iconInput && this._iconInput.value !== (this._config.icon || "")) {
-      this._iconInput.value = this._config.icon || "";
-    }
-    ENTITY_FIELDS.forEach((field) => {
-      const picker = this._pickers[field.key];
-      const val = this._config[field.key] || "";
-      if (picker && picker.value !== val) picker.value = val;
-    });
+    this._form.data = compactConfig(this._config);
   }
 
   _fireConfigChanged() {
     const config = compactConfig(this._config);
+    if (config.icon === DEFAULT_CONFIG.icon) delete config.icon;
     config.type = config.type || `custom:${CARD_TAG}`;
     this.dispatchEvent(
       new CustomEvent("config-changed", {
@@ -992,6 +940,6 @@ window.customCards.push({
   type: CARD_TAG,
   name: "Laundry Monitor Card",
   description:
-    "Карточка для интеграции Laundry Monitor: состояние цикла, статусы (стирка/отжим/завершено), длительность, ток и мощность, трекинг белья и сворачиваемая диагностика.",
+    "Lovelace card for Laundry Monitor: cycle state, status, power, laundry tracking and diagnostics.",
   preview: false,
 });
