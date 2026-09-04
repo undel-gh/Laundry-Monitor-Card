@@ -1,7 +1,7 @@
 # Laundry Monitor Card
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
-![License](https://img.shields.io/github/license/undel-gh/HA-Laundry-Monitor)
+![License](https://img.shields.io/github/license/undel-gh/Laundry-Monitor-Card)
 
 A single Lovelace card for integrating **[Laundry Monitor](https://github.com/undel-gh/HA-Laundry-Monitor)**
 into Home Assistant: wash cycle status, statuses (wash/final spin/
@@ -21,7 +21,7 @@ Example of a view with laundry unloading tracking:
 <img width="412" height="205" alt="image" src="https://github.com/user-attachments/assets/e0486bc9-c567-4bc3-9bae-fa7b798f2917" />
 
 The card doesn't require assembly: it's a pure Custom Element with no external dependencies
-(except for the built-in `ha-card` / `ha-icon` / `ha-entity-picker` from Home Assistant itself).
+(except for the built-in `ha-card` / `ha-icon` / `ha-form` components from Home Assistant itself).
 No button-card, Mushroom, or card-mod are needed.
 
 ## Translation Support
@@ -62,6 +62,9 @@ New cards do not assume any entity IDs. Select the entities that belong to your
 Laundry Monitor device in the visual editor or configure them explicitly in YAML.
 The visual editor follows the Home Assistant interface language (English/Russian).
 
+The visual editor uses Home Assistant's native form and selectors, including the
+native icon picker and domain-filtered entity selectors. Empty optional fields are
+not written to the Lovelace configuration.
 The card and its visual editor use isolated Shadow DOM styles. User-provided icon
 configuration is applied as an element attribute rather than interpolated into HTML.
 Diagnostics update dynamically when configured entities appear or disappear.
@@ -160,6 +163,9 @@ diagnostics) при отсутствии просто скрываются. По
 сущности своего устройства Laundry Monitor в визуальном редакторе или задайте
 их явно в YAML. Язык визуального редактора следует языку интерфейса Home Assistant.
 
+Визуальный редактор использует нативную форму и selectors Home Assistant, включая
+штатный выбор иконки и фильтрацию сущностей по домену. Пустые опциональные поля
+не записываются в конфигурацию Lovelace.
 Стили карточки и визуального редактора изолированы через Shadow DOM. Пользовательская
 настройка иконки назначается как атрибут элемента и не подставляется в HTML.
 Диагностические строки динамически обновляются при появлении или исчезновении
@@ -192,5 +198,6 @@ current_entity: sensor.stiralka_current_draw
 
 ## Совместимость
 
-Разработано для интеграции Laundry Monitor. Идентификаторы сущностей по умолчанию
-соответствуют типовой установке; при необходимости укажите свои в редакторе.
+Разработано для интеграции Laundry Monitor и Home Assistant 2026.6.0 или новее.
+Карточка не содержит заранее заданных идентификаторов сущностей: выберите сущности
++конкретного устройства Laundry Monitor в визуальном редакторе или задайте их в YAML.
