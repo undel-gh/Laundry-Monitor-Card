@@ -519,7 +519,6 @@ class LaundryMonitorCard extends HTMLElement {
       min_rows: 2,
     };
   }
-  
   connectedCallback() {
     if (this._config && this._hass && !this._built) this._render();
   }
@@ -709,7 +708,6 @@ if (this._configurationIncomplete) {
 
   _buildDiag() {
     const cfg = this._config;
-    
     const wasOpen = this._els.diag.classList.contains("open");
     this._els.diag.innerHTML = "";
     this._diagRows = [];
@@ -927,7 +925,6 @@ class LaundryMonitorCardEditor extends HTMLElement {
       this._form.schema = this._editorSchema();
     }    
   }
-
   connectedCallback() {
     if (this._config && this._hass && !this._form) this._buildForm();
   }
