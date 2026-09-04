@@ -13,7 +13,7 @@
  *    следует языку интерфейса HA (интеграция поставляет en/ru). Немногочисленные
  *    собственные подписи карточки берутся из встроенного словаря по hass.language.
  */
-const CARD_VERSION = "1.0.4-rc2";
+const CARD_VERSION = "1.0.4-rc2-patched";
 const CARD_TAG = "laundry-monitor-card";
 const EDITOR_TAG = "laundry-monitor-card-editor";
 
@@ -60,8 +60,7 @@ const DEFAULT_CONFIG = {
 
 // Встроенный словарь для собственных подписей карточки (не имён сущностей).
 const STRINGS = {
-  en: {
-    diagnostics: "Diagnostics",
+  en: {    
     activity: "Activity",
     final_spin: "Final spin",
     electrical_hybrid: "Electrical / hybrid",
@@ -114,8 +113,7 @@ const STRINGS = {
     field_rejected_count: "Rejected transition count",
     action_failed: "Action failed",
   },
-  ru: {
-    diagnostics: "Диагностика",
+  ru: {    
     activity: "Активность",
     final_spin: "Финальный отжим",
     electrical_hybrid: "Электрика / hybrid",
@@ -469,10 +467,10 @@ class LaundryMonitorCard extends HTMLElement {
   }
 
   setConfig(config) {
-  if (!config) throw new Error("Invalid Laundry Monitor Card configuration");
+    if (!config) throw new Error("Invalid Laundry Monitor Card configuration");
     this._config = { ...DEFAULT_CONFIG, ...config };
-  this._configurationIncomplete =
-    !this._config.cycle_state_entity && !this._config.running_entity;
+    this._configurationIncomplete =
+      !this._config.cycle_state_entity && !this._config.running_entity;
     this._trackedEntityIds = [
       ...new Set(ENTITY_FIELDS.map((field) => this._config[field.key]).filter(Boolean)),
     ];
@@ -556,17 +554,17 @@ class LaundryMonitorCard extends HTMLElement {
     root.appendChild(style);
 
     const card = document.createElement("ha-card");
-if (this._configurationIncomplete) {
-  const message = document.createElement("div");
-  message.className = "lm-config-required";
-  message.textContent = this._t("configuration_required");
-  card.appendChild(message);
-  root.appendChild(card);
-  this._els = {};
-  this._diagSig = null;
-  this._built = true;
-  return;
-}
+    if (this._configurationIncomplete) {
+      const message = document.createElement("div");
+      message.className = "lm-config-required";
+      message.textContent = this._t("configuration_required");
+      card.appendChild(message);
+      root.appendChild(card);
+      this._els = { configMessage: message };
+      this._diagSig = null;
+      this._built = true;
+      return;
+    }
     // header
     const header = document.createElement("div");
     header.className = "lm-header";
@@ -660,10 +658,7 @@ if (this._configurationIncomplete) {
     const toggleDiagnostics = () => {
       const open = diag.classList.toggle("open");
       diagToggle.classList.toggle("open", open);
-      diagToggle.setAttribute("aria-expanded", String(open));
-      this.dispatchEvent(
-        new Event("ll-rebuild", { bubbles: true, composed: true })
-      );
+      diagToggle.setAttribute("aria-expanded", String(open));      
     };
     diagToggle.addEventListener("click", toggleDiagnostics);
     diagToggle.addEventListener("keydown", (event) => {
@@ -756,11 +751,16 @@ if (this._configurationIncomplete) {
 
   // ---- точечное обновление (без пересоздания DOM) ----
   _update() {
-    const hass = this._hass;
-    const cfg = this._config;
+    const hass = this._hass;    
     const els = this._els;
     if (!hass || !els) return;
-
+    if (this._configurationIncomplete) {
+      if (els.configMessage) {
+        els.configMessage.textContent = this._t("configuration_required");
+      }
+      return;
+    }
+    const cfg = this._config;
     // header: title + localized state + accent color
     const stateObj = hass.states[cfg.cycle_state_entity];
     els.title.textContent = cfg.title || this._name(cfg.cycle_state_entity, "Laundry");
