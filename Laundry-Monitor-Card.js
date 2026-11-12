@@ -37,6 +37,8 @@ const DEFAULT_CONFIG = {
   mark_unloaded_entity: "",
   last_unloaded_entity: "",
   // диагностика
+  heating_state_entity: "",
+  heating_active_entity: "",
   activity_entity: "",
   power_activity_entity: "",
   current_activity_entity: "",
@@ -63,6 +65,7 @@ const DEFAULT_CONFIG = {
 const STRINGS = {
   en: {
     activity: "Activity",
+    heating: "Heating",
     final_spin: "Final spin",
     electrical_hybrid: "Electrical / hybrid",
     completion: "Cycle completion",
@@ -92,6 +95,8 @@ const STRINGS = {
     field_laundry_present: "Laundry present (optional)",
     field_mark_unloaded: "Mark unloaded button (optional)",
     field_last_unloaded: "Last unloaded (optional)",
+    field_heating_state: "Heating state (optional)",
+    field_heating_active: "Heating active (optional)",
     field_activity: "Activity detected",
     field_power_activity: "Power activity",
     field_current_activity: "Current activity",
@@ -116,6 +121,7 @@ const STRINGS = {
   },
   ru: {
     activity: "Активность",
+    heating: "Нагрев",
     final_spin: "Финальный отжим",
     electrical_hybrid: "Электрика / hybrid",
     completion: "Завершение цикла",
@@ -145,6 +151,8 @@ const STRINGS = {
     field_laundry_present: "Бельё в машине (опц.)",
     field_mark_unloaded: "Кнопка «Бельё выгружено» (опц.)",
     field_last_unloaded: "Последняя выгрузка (опц.)",
+    field_heating_state: "Состояние нагрева (опц.)",
+    field_heating_active: "Нагрев активен (опц.)",
     field_activity: "Обнаружена активность",
     field_power_activity: "Активность по мощности",
     field_current_activity: "Активность по току",
@@ -185,6 +193,8 @@ const ENTITY_FIELDS = [
   { key: "laundry_present_entity", labelKey: "field_laundry_present", domains: ["binary_sensor"] },
   { key: "mark_unloaded_entity", labelKey: "field_mark_unloaded", domains: ["button"] },
   { key: "last_unloaded_entity", labelKey: "field_last_unloaded", domains: ["sensor"] },
+  { key: "heating_state_entity", labelKey: "field_heating_state", domains: ["sensor"] },
+  { key: "heating_active_entity", labelKey: "field_heating_active", domains: ["binary_sensor"] },
   { key: "activity_entity", labelKey: "field_activity", domains: ["binary_sensor"] },
   { key: "power_activity_entity", labelKey: "field_power_activity", domains: ["binary_sensor"] },
   { key: "current_activity_entity", labelKey: "field_current_activity", domains: ["binary_sensor"] },
@@ -228,6 +238,7 @@ const TRACKING_ENTITY_KEYS = [
 ];
 
 const DIAGNOSTIC_GROUPS = [
+  { labelKey: "heating", keys: ["heating_state_entity", "heating_active_entity"] },
   {
     labelKey: "activity",
     keys: [
