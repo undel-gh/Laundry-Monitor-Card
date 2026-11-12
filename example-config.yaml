@@ -18,6 +18,9 @@ laundry_present_entity: binary_sensor.stiralka_laundry_present
 mark_unloaded_entity: button.stiralka_mark_unloaded
 last_unloaded_entity: sensor.stiralka_last_unloaded_at
 # --- диагностика (сворачиваемый блок) ---
+# Нагрев (опциональные диагностические сущности, по умолчанию отключены)
+heating_state_entity: sensor.stiralka_heating_state
+heating_active_entity: binary_sensor.stiralka_heating_active
 activity_entity: binary_sensor.stiralka_activity_detected
 power_activity_entity: binary_sensor.stiralka_power_activity_detected
 current_activity_entity: binary_sensor.stiralka_current_activity_detected
