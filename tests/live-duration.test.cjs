@@ -72,7 +72,14 @@ function setup() {
   const tick = () => {
     for (const fn of [...timers.values()]) fn();
   };
-  return { card, timers, state, tick, setNow(value) { now = Date.parse(value); } };
+  return {
+    card,
+    Editor: elements.get("laundry-monitor-card-editor"),
+    timers,
+    state,
+    tick,
+    setNow(value) { now = Date.parse(value); },
+  };
 }
 
 test("live clock updates locally without HA state writes or extra timers", () => {
@@ -208,4 +215,20 @@ test("metric hides without configured duration entities", () => {
   assert.equal(s.card._els.durMetric.hidden, true);
   assert.equal(s.card._els.durVal.textContent, "—");
   assert.equal(s.timers.size, 0);
+});
+
+test("editor exposes timestamp and optional heating diagnostics without duplicate keys", () => {
+  const s = setup();
+  const editor = new s.Editor();
+  editor._hass = { language: "en" };
+  const schema = editor._editorSchema();
+  const primary = schema.find((section) => section.title === "Primary entities");
+  const diagnostics = schema.find((section) => section.title === "Diagnostics");
+  assert.ok(primary.schema.some((field) => field.name === "cycle_started_at_entity"));
+  assert.ok(diagnostics.schema.some((field) => field.name === "heating_state_entity"));
+  assert.ok(diagnostics.schema.some((field) => field.name === "heating_active_entity"));
+  const keys = schema.flatMap((section) =>
+    (section.schema || []).map((field) => field.name)
+  );
+  assert.equal(new Set(keys).size, keys.length);
 });
