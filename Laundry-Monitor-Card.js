@@ -13,7 +13,7 @@
  *    следует языку интерфейса HA (интеграция поставляет en/ru). Немногочисленные
  *    собственные подписи карточки берутся из встроенного словаря по hass.language.
  */
-const CARD_VERSION = "1.0.4-rc3";
+const CARD_VERSION = "1.0.5";
 const CARD_TAG = "laundry-monitor-card";
 const EDITOR_TAG = "laundry-monitor-card-editor";
 
@@ -25,6 +25,7 @@ const DEFAULT_CONFIG = {
   running_entity: "",
   final_spin_entity: "",
   finished_entity: "",
+  cycle_started_at_entity: "",
   current_cycle_duration_entity: "",
   last_cycle_duration_entity: "",
   last_cycle_energy_entity: "",
@@ -36,6 +37,8 @@ const DEFAULT_CONFIG = {
   mark_unloaded_entity: "",
   last_unloaded_entity: "",
   // диагностика
+  heating_state_entity: "",
+  heating_active_entity: "",
   activity_entity: "",
   power_activity_entity: "",
   current_activity_entity: "",
@@ -62,6 +65,7 @@ const DEFAULT_CONFIG = {
 const STRINGS = {
   en: {
     activity: "Activity",
+    heating: "Heating",
     final_spin: "Final spin",
     electrical_hybrid: "Electrical / hybrid",
     completion: "Cycle completion",
@@ -81,7 +85,8 @@ const STRINGS = {
     field_running: "Running",
     field_final_spin: "Final spin detected",
     field_finished: "Finished",
-    field_current_cycle_duration: "Current cycle duration",
+    field_cycle_started_at: "Cycle started at (live timer, recommended)",
+    field_current_cycle_duration: "Current cycle duration (legacy snapshot)",
     field_last_cycle_duration: "Last cycle duration",
     field_last_cycle_energy: "Last cycle energy (optional)",
     field_power: "Current power",
@@ -90,6 +95,8 @@ const STRINGS = {
     field_laundry_present: "Laundry present (optional)",
     field_mark_unloaded: "Mark unloaded button (optional)",
     field_last_unloaded: "Last unloaded (optional)",
+    field_heating_state: "Heating state (optional)",
+    field_heating_active: "Heating active (optional)",
     field_activity: "Activity detected",
     field_power_activity: "Power activity",
     field_current_activity: "Current activity",
@@ -114,6 +121,7 @@ const STRINGS = {
   },
   ru: {
     activity: "Активность",
+    heating: "Нагрев",
     final_spin: "Финальный отжим",
     electrical_hybrid: "Электрика / hybrid",
     completion: "Завершение цикла",
@@ -133,7 +141,8 @@ const STRINGS = {
     field_running: "Стирка выполняется",
     field_final_spin: "Финальный отжим",
     field_finished: "Стирка завершена",
-    field_current_cycle_duration: "Текущая длительность цикла",
+    field_cycle_started_at: "Начало цикла (живой таймер, рекомендуется)",
+    field_current_cycle_duration: "Текущая длительность (устаревший снимок)",
     field_last_cycle_duration: "Длительность последнего цикла",
     field_last_cycle_energy: "Энергия последнего цикла (опц.)",
     field_power: "Текущая мощность",
@@ -142,6 +151,8 @@ const STRINGS = {
     field_laundry_present: "Бельё в машине (опц.)",
     field_mark_unloaded: "Кнопка «Бельё выгружено» (опц.)",
     field_last_unloaded: "Последняя выгрузка (опц.)",
+    field_heating_state: "Состояние нагрева (опц.)",
+    field_heating_active: "Нагрев активен (опц.)",
     field_activity: "Обнаружена активность",
     field_power_activity: "Активность по мощности",
     field_current_activity: "Активность по току",
@@ -172,6 +183,7 @@ const ENTITY_FIELDS = [
   { key: "running_entity", labelKey: "field_running", domains: ["binary_sensor"] },
   { key: "final_spin_entity", labelKey: "field_final_spin", domains: ["binary_sensor"] },
   { key: "finished_entity", labelKey: "field_finished", domains: ["binary_sensor"] },
+  { key: "cycle_started_at_entity", labelKey: "field_cycle_started_at", domains: ["sensor"] },
   { key: "current_cycle_duration_entity", labelKey: "field_current_cycle_duration", domains: ["sensor"] },
   { key: "last_cycle_duration_entity", labelKey: "field_last_cycle_duration", domains: ["sensor"] },
   { key: "last_cycle_energy_entity", labelKey: "field_last_cycle_energy", domains: ["sensor"] },
@@ -181,6 +193,8 @@ const ENTITY_FIELDS = [
   { key: "laundry_present_entity", labelKey: "field_laundry_present", domains: ["binary_sensor"] },
   { key: "mark_unloaded_entity", labelKey: "field_mark_unloaded", domains: ["button"] },
   { key: "last_unloaded_entity", labelKey: "field_last_unloaded", domains: ["sensor"] },
+  { key: "heating_state_entity", labelKey: "field_heating_state", domains: ["sensor"] },
+  { key: "heating_active_entity", labelKey: "field_heating_active", domains: ["binary_sensor"] },
   { key: "activity_entity", labelKey: "field_activity", domains: ["binary_sensor"] },
   { key: "power_activity_entity", labelKey: "field_power_activity", domains: ["binary_sensor"] },
   { key: "current_activity_entity", labelKey: "field_current_activity", domains: ["binary_sensor"] },
@@ -208,6 +222,7 @@ const PRIMARY_ENTITY_KEYS = [
   "running_entity",
   "final_spin_entity",
   "finished_entity",
+  "cycle_started_at_entity",
   "current_cycle_duration_entity",
   "last_cycle_duration_entity",
   "last_cycle_energy_entity",
@@ -234,6 +249,7 @@ const DIAGNOSTIC_GROUPS = [
       "last_current_activity_entity",
     ],
   },
+  { labelKey: "heating", keys: ["heating_state_entity", "heating_active_entity"] },
   {
     labelKey: "final_spin",
     keys: [
@@ -328,12 +344,27 @@ function fmtDuration(stateObj, hass) {
   else if (["h", "hr", "hour", "hours"].includes(unit)) seconds = value * 3600;
   else return fmtState(hass, stateObj);
 
-  const s = Math.max(0, Math.round(seconds));
+  return fmtClock(Math.round(seconds));
+}
+
+// Format elapsed time locally: no periodic Home Assistant state or Recorder writes.
+function fmtClock(seconds) {
+  if (!Number.isFinite(seconds)) return "—";
+  const s = Math.max(0, Math.floor(seconds));
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   const x = s % 60;
   const pad = (n) => String(n).padStart(2, "0");
   return h > 0 ? `${h}:${pad(m)}:${pad(x)}` : `${m}:${pad(x)}`;
+}
+
+function parseCycleStart(stateObj) {
+  if (isUnavailable(stateObj) || typeof stateObj.state !== "string") return null;
+  const timestamp = stateObj.state.trim();
+  // HA timestamp entities include a timezone; do not interpret naive local dates.
+  if (!/(?:Z|[+-]\d{2}:\d{2})$/i.test(timestamp)) return null;
+  const millis = Date.parse(timestamp);
+  return Number.isFinite(millis) ? millis : null;
 }
 
 function compactConfig(config) {
@@ -466,6 +497,8 @@ class LaundryMonitorCard extends HTMLElement {
 
   setConfig(config) {
     if (!config) throw new Error("Invalid Laundry Monitor Card configuration");
+    this._stopDurationTimer();
+    this._durationStartedAtMs = null;
     this._config = { ...DEFAULT_CONFIG, ...config };
     this._configurationIncomplete =
       !this._config.cycle_state_entity && !this._config.running_entity;
@@ -516,7 +549,73 @@ class LaundryMonitorCard extends HTMLElement {
     };
   }
   connectedCallback() {
-    if (this._config && this._hass && !this._built) this._render();
+    if (this._config && this._hass && !this._built) {
+      this._render();
+    } else if (this._built) {
+      this._tickDuration();
+      this._syncDurationTimer();
+    }
+  }
+
+  disconnectedCallback() {
+    this._stopDurationTimer();
+  }
+
+  _stopDurationTimer() {
+    if (this._durationTimer !== undefined) {
+      clearInterval(this._durationTimer);
+      this._durationTimer = undefined;
+    }
+  }
+
+  _syncDurationTimer() {
+    const shouldTick = this.isConnected && this._durationStartedAtMs !== null;
+    if (!shouldTick) {
+      this._stopDurationTimer();
+    } else if (this._durationTimer === undefined) {
+      this._durationTimer = setInterval(() => this._tickDuration(), 1000);
+    }
+  }
+
+  _tickDuration() {
+    if (!this._els?.durVal) return;
+    const value = this._durationStartedAtMs === null ||
+      this._durationStartedAtMs === undefined
+      ? this._durationStaticText || "—"
+      : fmtClock((Date.now() - this._durationStartedAtMs) / 1000);
+    if (this._els.durVal.textContent !== value) {
+      this._els.durVal.textContent = value;
+    }
+  }
+
+  _updateDuration() {
+    const cfg = this._config;
+    const hass = this._hass;
+    const stateObj = hass.states[cfg.cycle_state_entity];
+    const hasValidCycleState = !!cfg.cycle_state_entity && !isUnavailable(stateObj);
+    const isOn = (entityId) => hass.states[entityId]?.state === "on";
+    // The cycle-state enum is authoritative when present; binary sensors
+    // support older configurations that only provide running/final-spin flags.
+    const activeCycle = hasValidCycleState
+      ? stateObj.state === "running" || stateObj.state === "final_spin"
+      : isOn(cfg.running_entity) || isOn(cfg.final_spin_entity);
+    const curDur = hass.states[cfg.current_cycle_duration_entity];
+    const lastDur = hass.states[cfg.last_cycle_duration_entity];
+    this._durationStartedAtMs = activeCycle
+      ? parseCycleStart(hass.states[cfg.cycle_started_at_entity])
+      : null;
+    // Legacy duration is a static snapshot in Laundry Monitor 0.1.8-rc8.
+    // Never show the previous completed cycle as the current cycle duration.
+    const fallback = activeCycle ? curDur : lastDur;
+    this._durationStaticText = isUnavailable(fallback)
+      ? "—"
+      : fmtDuration(fallback, hass);
+    this._els.durMetric.hidden =
+      !cfg.cycle_started_at_entity &&
+      !cfg.current_cycle_duration_entity &&
+      !cfg.last_cycle_duration_entity;
+    this._tickDuration();
+    this._syncDurationTimer();
   }
 
   _t(key) {
@@ -543,6 +642,8 @@ class LaundryMonitorCard extends HTMLElement {
 
   // ---- построение DOM (один раз) ----
   _render() {
+    this._stopDurationTimer();
+    this._durationStartedAtMs = null;
     const cfg = this._config;
     const root = this.shadowRoot;
     root.innerHTML = "";
@@ -794,24 +895,8 @@ class LaundryMonitorCard extends HTMLElement {
     setChip(els.chipSpin, cfg.final_spin_entity);
     setChip(els.chipFinished, cfg.finished_entity);
 
-    // duration: current only while a cycle is active; otherwise last completed cycle
-    const curDur = hass.states[cfg.current_cycle_duration_entity];
-    const lastDur = hass.states[cfg.last_cycle_duration_entity];
-    const isOn = (entityId) => hass.states[entityId]?.state === "on";
-    const activeCycle =
-      isOn(cfg.running_entity) ||
-      isOn(cfg.final_spin_entity) ||
-      (stateObj &&
-        (stateObj.state === "running" || stateObj.state === "final_spin"));
-    const durSrc =
-      activeCycle && !isUnavailable(curDur)
-        ? curDur
-        : !isUnavailable(lastDur)
-        ? lastDur
-        : null;
-    els.durMetric.hidden =
-      !cfg.current_cycle_duration_entity && !cfg.last_cycle_duration_entity;
-    els.durVal.textContent = durSrc ? fmtDuration(durSrc, hass) : "—";
+    // A browser-local clock while active; completed duration otherwise.
+    this._updateDuration();
 
     // current draw (optional)
     const curSt = hass.states[cfg.current_entity];

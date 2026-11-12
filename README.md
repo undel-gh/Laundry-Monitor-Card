@@ -53,8 +53,8 @@ Nothing is hardcoded—when changing the HA language, the card switches automati
 ## Configuration
 
 The card can be configured using the visual editor (the "Edit" button on the card)
-or in YAML. The minimum required entities are cycle state, status, and power;
-optional entities (current, energy, leakage, laundry tracking, and electrical/hybrid
+or in YAML. Configure at least a cycle-state or running entity; power and the other
+entities (duration, current, energy, leakage, laundry tracking, and electrical/hybrid
 diagnostics) are simply hidden if missing. A full example is in
 [`example-config.yaml`](example-config.yaml).
 
@@ -79,6 +79,33 @@ power_entity: sensor.washing_machine_current_power
 current_entity: sensor.washing_machine_current_draw
 ```
 
+### Live cycle duration (Laundry Monitor 0.1.8-rc8+)
+
+The integration now exposes `cycle_started_at` (enabled by default).
+Select that timestamp sensor under **Primary entities → Cycle started at**
+or add it to your card YAML:
+
+```yaml
+cycle_started_at_entity: sensor.washing_machine_cycle_started_at
+last_cycle_duration_entity: sensor.washing_machine_last_cycle_duration
+```
+
+During `running` and `final_spin`, the card shows a live `m:ss` / `h:mm:ss`
+timer calculated from the timestamp and the **browser's clock**. The display
+refreshes once per second only while the card is attached and a valid,
+timezone-aware timestamp is available. It stops on completion or when the
+card is removed. The card **does not call Home Assistant services or publish
+states** to advance this timer, so it does not create periodic Recorder writes.
+After completion, it shows `last_cycle_duration`.
+
+Existing configurations continue to work: the optional
+`current_cycle_duration_entity` is a **legacy snapshot** on integration
+0.1.8-rc8, not a live counter. It is disabled by default on new integration
+installations. If the timestamp is missing, the card shows that configured
+snapshot while active (or `—` if unavailable); it **never displays the
+previous cycle's duration as an active-cycle timer**. For a live timer, add
+`cycle_started_at_entity` explicitly; card entity IDs are not guessed.
+
 ### Block Behavior
 
 - **Laundry Tracking** (row "Laundry in machine" + button "Laundry unloaded")
@@ -86,10 +113,10 @@ is displayed only when the corresponding entities are available. If tracking is 
 integration and the entity is 'unavailable', the block is hidden.
 - **Leak** is shown as a red badge in the header only when triggered.
 - **Diagnostics** is collapsed by default; expands on click. It can contain
-  "Activity," "Final Spin," "Electrical / hybrid," "Timing & power," "Laundry,"
+  "Activity," "Heating," "Final Spin," "Electrical / hybrid," "Timing & power," "Laundry,"
   "Cycle Completion," and "State Transitions" sections.
-- Electrical/hybrid diagnostic entities are disabled by default by the Laundry Monitor
-  integration. Enable the desired entities in Home Assistant and select them in the card
+- Heating and electrical/hybrid diagnostic entities are disabled by default by
+  the Laundry Monitor integration. Enable the desired entities in Home Assistant and select them in the card
   editor before expecting those rows to appear.
 - Clicking on a row or chip opens the standard `more-info` window for the entity.
 
@@ -156,8 +183,8 @@ explicitly in YAML.
 ## Конфигурация
 
 Карточку можно настроить визуальным редактором (кнопка «Изменить» на карточке)
-или в YAML. Минимально нужны сущности состояния цикла, статусов и мощности;
-опциональные (ток, энергия, протечка, трекинг белья и electrical/hybrid
+или в YAML. Достаточно настроить состояние цикла или статус «Стирка выполняется»;
+остальные (длительность, мощность, ток, энергия, протечка, трекинг белья и electrical/hybrid
 diagnostics) при отсутствии просто скрываются. Полный пример —
 в [`example-config.yaml`](example-config.yaml).
 
@@ -183,6 +210,35 @@ power_entity: sensor.stiralka_current_power
 current_entity: sensor.stiralka_current_draw
 ```
 
+### Живая длительность цикла (Laundry Monitor 0.1.8-rc8+)
+
+Интеграция предоставляет сущность `cycle_started_at` (включена по
+умолчанию). Выберите этот timestamp-датчик в редакторе в разделе
+**Основные сущности → Начало цикла** или добавьте в YAML:
+
+```yaml
+cycle_started_at_entity: sensor.stiralka_cycle_started_at
+last_cycle_duration_entity: sensor.stiralka_last_cycle_duration
+```
+
+В состояниях `running` и `final_spin` карточка показывает живой счётчик
+`м:сс` / `ч:мм:сс`, вычисляемый по времени начала цикла и **часам браузера**.
+Показания обновляются раз в секунду, только пока карточка подключена к
+интерфейсу и доступна корректная временная метка с часовым поясом. После
+завершения или удаления карточки таймер останавливается. Для обновления
+счётчика карточка **не отправляет в Home Assistant команды и не публикует
+состояния**, поэтому дополнительные периодические записи в Recorder
+не появляются. После завершения отображается `last_cycle_duration`.
+
+Старые конфигурации продолжают работать: необязательная
+`current_cycle_duration_entity` в версии интеграции 0.1.8-rc8 показывает
+только **снимок длительности**, а не живой счётчик. На новых установках
+интеграции эта сущность по умолчанию отключена. Если timestamp недоступен,
+во время цикла показывается настроенный старый снимок (либо `—` при
+его отсутствии), но **не длительность предыдущей стирки**. Для живого
+счётчика явно выберите `cycle_started_at_entity` — карточка не
+предполагает заранее известных идентификаторов сущностей.
+
 ### Поведение блоков
 
 - **Трекинг белья** (строка «Бельё в машине» + кнопка «Бельё выгружено»)
@@ -190,10 +246,10 @@ current_entity: sensor.stiralka_current_draw
   интеграции выключен и сущности `unavailable` — блок скрыт.
 - **Протечка** показывается как красный бейдж в шапке только при срабатывании.
 - **Диагностика** свёрнута по умолчанию; раскрывается по клику. Внутри — секции
-  «Активность», «Финальный отжим», «Электрика / hybrid»,
+  «Активность», «Нагрев», «Финальный отжим», «Электрика / hybrid»,
   «Длительность и питание», «Бельё», «Завершение цикла» и
   «Переходы состояния».
-- Диагностические сущности electrical/hybrid по умолчанию отключены самой
+- Диагностические сущности нагрева и electrical/hybrid по умолчанию отключены самой
   интеграцией Laundry Monitor. Сначала включите нужные сущности в Home Assistant,
   затем выберите их в редакторе карточки.
 - Клик по строке или чипу открывает стандартное окно `more-info` сущности.

@@ -14,9 +14,11 @@ jobs:
       - name: Smoke-load card and validate editor groups
         run: |
           node -e 'global.HTMLElement=class {}; global.customElements={get:()=>undefined,define:()=>{}}; global.window={}; require("./Laundry-Monitor-Card.js")'
+      - name: Test browser-local cycle duration and timer lifecycle
+        run: node --test tests/*.test.cjs
       - name: Check trailing whitespace
         run: |
-          if grep -nP '[ \t]+$' Laundry-Monitor-Card.js README.md hacs.json .github/workflows/main.yml; then
+          if grep -nP '[ \t]+$' Laundry-Monitor-Card.js README.md example-config.yaml hacs.json .github/workflows/main.yml tests/*.test.cjs; then
             echo "Trailing whitespace found"
             exit 1
           fi
