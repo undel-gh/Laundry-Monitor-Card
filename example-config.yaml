@@ -6,7 +6,8 @@ cycle_state_entity: sensor.stiralka_cycle_state
 running_entity: binary_sensor.stiralka_running
 final_spin_entity: binary_sensor.stiralka_final_spin_detected
 finished_entity: binary_sensor.stiralka_finished
-current_cycle_duration_entity: sensor.stiralka_current_cycle_duration
+cycle_started_at_entity: sensor.stiralka_cycle_started_at  # живой таймер (0.1.8-rc8+)
+current_cycle_duration_entity: ""  # устаревший снимок; на новых установках отключён
 last_cycle_duration_entity: sensor.stiralka_last_cycle_duration
 last_cycle_energy_entity: ""            # нет датчика энергии — оставить пустым
 power_entity: sensor.stiralka_current_power
