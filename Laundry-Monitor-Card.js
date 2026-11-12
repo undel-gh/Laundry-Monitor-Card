@@ -351,7 +351,7 @@ function parseCycleStart(stateObj) {
   if (isUnavailable(stateObj) || typeof stateObj.state !== "string") return null;
   const timestamp = stateObj.state.trim();
   // HA timestamp entities include a timezone; do not interpret naive local dates.
-  if (!/(?:Z|[+-]\\d{2}:\\d{2})$/i.test(timestamp)) return null;
+  if (!/(?:Z|[+-]\d{2}:\d{2})$/i.test(timestamp)) return null;
   const millis = Date.parse(timestamp);
   return Number.isFinite(millis) ? millis : null;
 }
