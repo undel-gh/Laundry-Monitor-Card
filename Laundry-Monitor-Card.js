@@ -238,7 +238,6 @@ const TRACKING_ENTITY_KEYS = [
 ];
 
 const DIAGNOSTIC_GROUPS = [
-  { labelKey: "heating", keys: ["heating_state_entity", "heating_active_entity"] },
   {
     labelKey: "activity",
     keys: [
@@ -250,6 +249,7 @@ const DIAGNOSTIC_GROUPS = [
       "last_current_activity_entity",
     ],
   },
+  { labelKey: "heating", keys: ["heating_state_entity", "heating_active_entity"] },
   {
     labelKey: "final_spin",
     keys: [
