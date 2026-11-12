@@ -85,7 +85,7 @@ function setup() {
 test("live clock updates locally without HA state writes or extra timers", () => {
   const s = setup();
   s.state("sensor.cycle_state", "running");
-  s.state("sensor.started_at", "2026-11-12T13:59:50+00:00");
+  s.state("sensor.started_at", "2026-11-12T16:59:50+03:00");
   s.state("sensor.current_duration", "7", { unit_of_measurement: "s" });
   s.state("sensor.last_duration", "7200", { unit_of_measurement: "s" });
   s.card._updateDuration();
