@@ -113,10 +113,10 @@ is displayed only when the corresponding entities are available. If tracking is 
 integration and the entity is 'unavailable', the block is hidden.
 - **Leak** is shown as a red badge in the header only when triggered.
 - **Diagnostics** is collapsed by default; expands on click. It can contain
-  "Activity," "Final Spin," "Electrical / hybrid," "Timing & power," "Laundry,"
+  "Activity," "Heating," "Final Spin," "Electrical / hybrid," "Timing & power," "Laundry,"
   "Cycle Completion," and "State Transitions" sections.
-- Electrical/hybrid diagnostic entities are disabled by default by the Laundry Monitor
-  integration. Enable the desired entities in Home Assistant and select them in the card
+- Heating and electrical/hybrid diagnostic entities are disabled by default by
+  the Laundry Monitor integration. Enable the desired entities in Home Assistant and select them in the card
   editor before expecting those rows to appear.
 - Clicking on a row or chip opens the standard `more-info` window for the entity.
 
@@ -246,10 +246,10 @@ last_cycle_duration_entity: sensor.stiralka_last_cycle_duration
   интеграции выключен и сущности `unavailable` — блок скрыт.
 - **Протечка** показывается как красный бейдж в шапке только при срабатывании.
 - **Диагностика** свёрнута по умолчанию; раскрывается по клику. Внутри — секции
-  «Активность», «Финальный отжим», «Электрика / hybrid»,
+  «Активность», «Нагрев», «Финальный отжим», «Электрика / hybrid»,
   «Длительность и питание», «Бельё», «Завершение цикла» и
   «Переходы состояния».
-- Диагностические сущности electrical/hybrid по умолчанию отключены самой
+- Диагностические сущности нагрева и electrical/hybrid по умолчанию отключены самой
   интеграцией Laundry Monitor. Сначала включите нужные сущности в Home Assistant,
   затем выберите их в редакторе карточки.
 - Клик по строке или чипу открывает стандартное окно `more-info` сущности.
