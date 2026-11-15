@@ -143,7 +143,8 @@ for (const [running, spin, finished, expected] of [
   ["on", "off", "off", [true, false, false]],
   ["on", "on", "off", [true, true, false]],
   ["off", "on", "on", [false, false, true]],
-  ["on", "on", "on", [true, false, true]], // No spin on contradictory finish.
+  ["on", "on", "on", [false, false, true]], // Finished wins contradictory running.
+  ["on", "off", "on", [false, false, true]],
   ["unavailable", "on", "off", [false, false, false]],
 ]) {
   test(`binary-only fallback: running=${running}, spin=${spin}, finished=${finished}`, () => {
@@ -155,6 +156,15 @@ for (const [running, spin, finished, expected] of [
     assert.deepEqual(s.indicators(), expected);
   });
 }
+
+test("unusable cycle enum prioritizes finished over conflicting binary running", () => {
+  const s = setup();
+  s.state("sensor.cycle", "unknown");
+  s.state("binary_sensor.running", "on");
+  s.state("binary_sensor.final_spin", "on");
+  s.state("binary_sensor.finished", "on");
+  assert.deepEqual(s.indicators(), [false, false, true]);
+});
 
 for (const stateValue of ["unknown", "unavailable", "", "new_future_value"]) {
   test(`unusable cycle enum (${stateValue || "empty"}) uses conservative binary fallback`, () => {
