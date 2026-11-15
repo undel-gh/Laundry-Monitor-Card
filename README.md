@@ -128,10 +128,13 @@ Clicking the chip still opens that sensor's original `more-info` dialog.
 
 For older cards without a usable cycle-state sensor, the binary-sensor
 fallback highlights Final spin **only when both** `running_entity=on` and
-`final_spin_entity=on` (and `finished_entity` is not `on`). A stale
-final-spin flag on its own does not mean a cycle is running, and does not
-keep the live duration ticking. An unavailable or unknown cycle-state
-value uses the same conservative fallback. The ordinary visibility rules
+`final_spin_entity=on` (and `finished_entity` is not `on`). If
+`finished_entity=on`, **Finished takes precedence over Running** even if
+the running binary sensor still reports `on`: the Running and Final spin
+chips turn off, the live timer stops, and `last_cycle_duration` is shown.
+A stale final-spin flag on its own does not mean a cycle is running. An
+unrecognized, unavailable, or unknown cycle-state value uses the same
+conservative fallback. The ordinary visibility rules
 still apply: an unconfigured or missing chip entity is hidden.
 
 ### Block Behavior
@@ -271,8 +274,8 @@ last_cycle_duration_entity: sensor.stiralka_last_cycle_duration
 
 Индикаторы **Стирка**, **Финальный отжим** и **Завершено** показывают
 **текущую фазу цикла**, а не сохранённые признаки завершившейся стирки.
-Если настроен `cycle_state_entity` и его состояние известно, оно имеет
-приоритет перед противоречащими ему бинарными сенсорами:
+Если настроен `cycle_state_entity` и его состояние распознано карточкой,
+оно имеет приоритет перед противоречащими ему бинарными сенсорами:
 
 | Состояние цикла | Стирка | Финальный отжим | Завершено |
 | --- | --- | --- | --- |
@@ -291,10 +294,13 @@ last_cycle_duration_entity: sensor.stiralka_last_cycle_duration
 Для старых конфигураций без доступного датчика состояния цикла действует
 консервативная проверка: индикатор отжима активен **только при**
 `running_entity=on` и `final_spin_entity=on` (и неактивном
-`finished_entity`). Оставшийся от предыдущей стирки флаг отжима сам
-по себе не означает, что стирка продолжается, и не запускает живой
-таймер. При `unknown` или `unavailable` у состояния цикла применяется
-то же правило. Ненастроенный или отсутствующий индикатор скрыт.
+`finished_entity`). Если `finished_entity=on`, **завершение имеет приоритет
+перед выполнением стирки**, даже если `running_entity` ещё показывает
+`on`: оба индикатора активной фазы выключаются, таймер останавливается,
+показывается `last_cycle_duration`. Оставшийся от предыдущей стирки флаг
+отжима сам по себе не означает, что стирка продолжается. При
+нераспознанном значении состояния цикла, `unknown` или `unavailable`
+применяется то же правило. Ненастроенный или отсутствующий индикатор скрыт.
 
 ### Поведение блоков
 
