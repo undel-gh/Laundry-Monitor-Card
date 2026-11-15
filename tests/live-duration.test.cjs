@@ -176,6 +176,23 @@ test("binary-sensor-only configs are supported when cycle state is missing", () 
   assert.equal(s.timers.size, 1);
 });
 
+test("latched spin alone cannot keep legacy active duration running", () => {
+  const s = setup();
+  s.card._config.cycle_state_entity = "";
+  s.state("binary_sensor.running", "off");
+  s.state("binary_sensor.final_spin", "on"); // Latched from a completed cycle.
+  s.state("sensor.started_at", "2026-11-12T13:59:00Z");
+  s.state("sensor.last_duration", "245", { unit_of_measurement: "s" });
+  s.card._updateDuration();
+  assert.equal(s.card._els.durVal.textContent, "4:05");
+  assert.equal(s.timers.size, 0);
+  s.state("binary_sensor.running", "on");
+  s.state("binary_sensor.final_spin", "off");
+  s.card._updateDuration();
+  assert.equal(s.card._els.durVal.textContent, "1:00");
+  assert.equal(s.timers.size, 1);
+});
+
 test("disconnection and reconnection suspend and restore the local interval", () => {
   const s = setup();
   s.state("sensor.cycle_state", "running");
