@@ -348,13 +348,14 @@ function currentCycleIndicators(hass, cfg) {
     };
   }
 
-  // Legacy binary-only configurations: final_spin_detected remains latched
-  // after finishing. It is a current-phase signal only while running is on.
-  const running = hass.states[cfg.running_entity]?.state === "on";
+  // Legacy binary-only configurations: final_spin_detected remains latched.
+  // A finished flag wins over a contradictory running flag for both chips
+  // and the live duration. Only a currently running cycle can show spin.
   const finished = hass.states[cfg.finished_entity]?.state === "on";
+  const running = !finished && hass.states[cfg.running_entity]?.state === "on";
   return {
     running,
-    spin: running && !finished && hass.states[cfg.final_spin_entity]?.state === "on",
+    spin: running && hass.states[cfg.final_spin_entity]?.state === "on",
     finished,
   };
 }
