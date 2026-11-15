@@ -332,6 +332,33 @@ function isUnavailable(st) {
   return !st || st.state === "unavailable" || st.state === "unknown" || st.state === "";
 }
 
+// Status chips show the current phase, not latched final-spin evidence.
+// The enum wins over contradictory binary flags when it is recognized.
+const CYCLE_STATES = new Set([
+  "idle", "armed", "running", "final_spin", "finished", "error",
+]);
+
+function currentCycleIndicators(hass, cfg) {
+  const cycleState = hass.states[cfg.cycle_state_entity];
+  if (!isUnavailable(cycleState) && CYCLE_STATES.has(cycleState.state)) {
+    return {
+      running: cycleState.state === "running" || cycleState.state === "final_spin",
+      spin: cycleState.state === "final_spin",
+      finished: cycleState.state === "finished",
+    };
+  }
+
+  // Legacy binary-only configurations: final_spin_detected remains latched
+  // after finishing. It is a current-phase signal only while running is on.
+  const running = hass.states[cfg.running_entity]?.state === "on";
+  const finished = hass.states[cfg.finished_entity]?.state === "on";
+  return {
+    running,
+    spin: running && !finished && hass.states[cfg.final_spin_entity]?.state === "on",
+    finished,
+  };
+}
+
 function fmtDuration(stateObj, hass) {
   if (isUnavailable(stateObj)) return "—";
   const value = Number(stateObj.state);
@@ -591,14 +618,9 @@ class LaundryMonitorCard extends HTMLElement {
   _updateDuration() {
     const cfg = this._config;
     const hass = this._hass;
-    const stateObj = hass.states[cfg.cycle_state_entity];
-    const hasValidCycleState = !!cfg.cycle_state_entity && !isUnavailable(stateObj);
-    const isOn = (entityId) => hass.states[entityId]?.state === "on";
-    // The cycle-state enum is authoritative when present; binary sensors
-    // support older configurations that only provide running/final-spin flags.
-    const activeCycle = hasValidCycleState
-      ? stateObj.state === "running" || stateObj.state === "final_spin"
-      : isOn(cfg.running_entity) || isOn(cfg.final_spin_entity);
+    // Use the same phase decision as the chips: a historical latched
+    // final-spin flag must not keep the live duration running after a wash.
+    const { running: activeCycle } = currentCycleIndicators(hass, cfg);
     const curDur = hass.states[cfg.current_cycle_duration_entity];
     const lastDur = hass.states[cfg.last_cycle_duration_entity];
     this._durationStartedAtMs = activeCycle
@@ -881,19 +903,21 @@ class LaundryMonitorCard extends HTMLElement {
     els.leakBadgeText.textContent = this._name(cfg.leak_entity, "");
 
     // status chips
-    const setChip = (el, entityId) => {
+    const phases = currentCycleIndicators(hass, cfg);
+    const setChip = (el, entityId, active) => {
       const st = hass.states[entityId];
       const visible = !!entityId && !!st;
+      const pressed = visible && active;
       el.hidden = !visible;
-      el.classList.toggle("on", !!st && st.state === "on");
+      el.classList.toggle("on", pressed);
       const label = this._name(entityId, "");
       el.title = label;
       el.setAttribute("aria-label", label || entityId || "");
-      el.setAttribute("aria-pressed", String(!!st && st.state === "on"));
+      el.setAttribute("aria-pressed", String(pressed));
     };
-    setChip(els.chipRunning, cfg.running_entity);
-    setChip(els.chipSpin, cfg.final_spin_entity);
-    setChip(els.chipFinished, cfg.finished_entity);
+    setChip(els.chipRunning, cfg.running_entity, phases.running);
+    setChip(els.chipSpin, cfg.final_spin_entity, phases.spin);
+    setChip(els.chipFinished, cfg.finished_entity, phases.finished);
 
     // A browser-local clock while active; completed duration otherwise.
     this._updateDuration();
