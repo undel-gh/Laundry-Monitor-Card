@@ -7,9 +7,13 @@ jobs:
   syntax:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20' }
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Verify Node.js runtime
+        run: node --version
       - run: node --check Laundry-Monitor-Card.js
       - name: Smoke-load card and validate editor groups
         run: |
@@ -25,7 +29,7 @@ jobs:
   hacs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: HACS Action
         uses: hacs/action@22.5.0
         with:
