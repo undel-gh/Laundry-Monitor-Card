@@ -56,6 +56,7 @@ function setup() {
     last_cycle_duration_entity: "sensor.last_duration",
     running_entity: "binary_sensor.running",
     final_spin_entity: "binary_sensor.final_spin",
+    finished_entity: "binary_sensor.finished",
   };
   card._hass = {
     states: {},
@@ -174,6 +175,67 @@ test("binary-sensor-only configs are supported when cycle state is missing", () 
   s.card._updateDuration();
   assert.equal(s.card._els.durVal.textContent, "0:30");
   assert.equal(s.timers.size, 1);
+});
+
+test("latched spin alone cannot keep legacy active duration running", () => {
+  const s = setup();
+  s.card._config.cycle_state_entity = "";
+  s.state("binary_sensor.running", "off");
+  s.state("binary_sensor.final_spin", "on"); // Latched from a completed cycle.
+  s.state("sensor.started_at", "2026-11-12T13:59:00Z");
+  s.state("sensor.last_duration", "245", { unit_of_measurement: "s" });
+  s.card._updateDuration();
+  assert.equal(s.card._els.durVal.textContent, "4:05");
+  assert.equal(s.timers.size, 0);
+  s.state("binary_sensor.running", "on");
+  s.state("binary_sensor.final_spin", "off");
+  s.card._updateDuration();
+  assert.equal(s.card._els.durVal.textContent, "1:00");
+  assert.equal(s.timers.size, 1);
+});
+
+test("finished overrides contradictory running and stops a live legacy timer", () => {
+  const s = setup();
+  s.card._config.cycle_state_entity = "";
+  s.state("binary_sensor.running", "on");
+  s.state("binary_sensor.final_spin", "on");
+  s.state("binary_sensor.finished", "off");
+  s.state("sensor.started_at", "2026-11-12T13:59:00Z");
+  s.state("sensor.current_duration", "12", { unit_of_measurement: "s" });
+  s.state("sensor.last_duration", "245", { unit_of_measurement: "s" });
+
+  s.card._updateDuration();
+  assert.equal(s.card._els.durVal.textContent, "1:00");
+  assert.equal(s.timers.size, 1);
+
+  // HA may briefly report contradictory flags during a transition.
+  s.state("binary_sensor.finished", "on");
+  s.card._updateDuration();
+  assert.equal(s.card._els.durVal.textContent, "4:05");
+  assert.equal(s.timers.size, 0);
+  assert.equal(s.card._durationStartedAtMs, null);
+  s.setNow("2026-11-12T15:00:00Z");
+  s.tick();
+  assert.equal(s.card._els.durVal.textContent, "4:05");
+
+  s.state("binary_sensor.finished", "off");
+  s.card._updateDuration();
+  assert.equal(s.card._els.durVal.textContent, "1:01:00");
+  assert.equal(s.timers.size, 1);
+});
+
+test("unavailable cycle enum plus finished flag cannot keep live timer active", () => {
+  const s = setup();
+  s.state("sensor.cycle_state", "unavailable");
+  s.state("binary_sensor.running", "on");
+  s.state("binary_sensor.final_spin", "on");
+  s.state("binary_sensor.finished", "on");
+  s.state("sensor.started_at", "2026-11-12T13:59:00Z");
+  s.state("sensor.current_duration", "12", { unit_of_measurement: "s" });
+  s.state("sensor.last_duration", "245", { unit_of_measurement: "s" });
+  s.card._updateDuration();
+  assert.equal(s.card._els.durVal.textContent, "4:05");
+  assert.equal(s.timers.size, 0);
 });
 
 test("disconnection and reconnection suspend and restore the local interval", () => {

@@ -106,6 +106,37 @@ snapshot while active (or `—` if unavailable); it **never displays the
 previous cycle's duration as an active-cycle timer**. For a live timer, add
 `cycle_started_at_entity` explicitly; card entity IDs are not guessed.
 
+### Status chips: current phase vs. detection history
+
+The **Running**, **Final spin**, and **Finished** chips show the **current
+cycle phase**, not historical detection flags. When a configured
+`cycle_state_entity` reports a recognized state, it takes precedence over
+contradictory binary sensors:
+
+| Cycle state | Running | Final spin | Finished |
+| --- | --- | --- | --- |
+| `idle` / `armed` / `error` | Off | Off | Off |
+| `running` | On | Off | Off |
+| `final_spin` | On | On | Off |
+| `finished` | Off | Off | On |
+
+The integration's `binary_sensor.<device>_final_spin_detected` is **latched
+evidence**: it remains `on` after finishing and through idle, until the next
+cycle begins. The card deliberately turns off the **Final spin** chip outside
+the current final-spin phase; it **does not reset or change the HA sensor**.
+Clicking the chip still opens that sensor's original `more-info` dialog.
+
+For older cards without a usable cycle-state sensor, the binary-sensor
+fallback highlights Final spin **only when both** `running_entity=on` and
+`final_spin_entity=on` (and `finished_entity` is not `on`). If
+`finished_entity=on`, **Finished takes precedence over Running** even if
+the running binary sensor still reports `on`: the Running and Final spin
+chips turn off, the live timer stops, and `last_cycle_duration` is shown.
+A stale final-spin flag on its own does not mean a cycle is running. An
+unrecognized, unavailable, or unknown cycle-state value uses the same
+conservative fallback. The ordinary visibility rules
+still apply: an unconfigured or missing chip entity is hidden.
+
 ### Block Behavior
 
 - **Laundry Tracking** (row "Laundry in machine" + button "Laundry unloaded")
@@ -238,6 +269,38 @@ last_cycle_duration_entity: sensor.stiralka_last_cycle_duration
 его отсутствии), но **не длительность предыдущей стирки**. Для живого
 счётчика явно выберите `cycle_started_at_entity` — карточка не
 предполагает заранее известных идентификаторов сущностей.
+
+### Индикаторы статуса: текущая фаза и история обнаружения
+
+Индикаторы **Стирка**, **Финальный отжим** и **Завершено** показывают
+**текущую фазу цикла**, а не сохранённые признаки завершившейся стирки.
+Если настроен `cycle_state_entity` и его состояние распознано карточкой,
+оно имеет приоритет перед противоречащими ему бинарными сенсорами:
+
+| Состояние цикла | Стирка | Финальный отжим | Завершено |
+| --- | --- | --- | --- |
+| `idle` / `armed` / `error` | Выкл. | Выкл. | Выкл. |
+| `running` | Вкл. | Выкл. | Выкл. |
+| `final_spin` | Вкл. | Вкл. | Выкл. |
+| `finished` | Выкл. | Выкл. | Вкл. |
+
+В интеграции `binary_sensor.<device>_final_spin_detected` хранит
+**факт обнаружения отжима**: остаётся `on` после окончания цикла и в
+`idle`, пока не начнётся следующая стирка. Карточка выключает подсветку
+индикатора **Финальный отжим** вне соответствующей текущей фазы, **не
+изменяя состояние сенсора в Home Assistant**. Нажатие на индикатор
+по-прежнему открывает окно `more-info` исходной сущности.
+
+Для старых конфигураций без доступного датчика состояния цикла действует
+консервативная проверка: индикатор отжима активен **только при**
+`running_entity=on` и `final_spin_entity=on` (и неактивном
+`finished_entity`). Если `finished_entity=on`, **завершение имеет приоритет
+перед выполнением стирки**, даже если `running_entity` ещё показывает
+`on`: оба индикатора активной фазы выключаются, таймер останавливается,
+показывается `last_cycle_duration`. Оставшийся от предыдущей стирки флаг
+отжима сам по себе не означает, что стирка продолжается. При
+нераспознанном значении состояния цикла, `unknown` или `unavailable`
+применяется то же правило. Ненастроенный или отсутствующий индикатор скрыт.
 
 ### Поведение блоков
 
