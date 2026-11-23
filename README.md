@@ -79,7 +79,7 @@ power_entity: sensor.washing_machine_current_power
 current_entity: sensor.washing_machine_current_draw
 ```
 
-### Live cycle duration (Laundry Monitor 0.1.8-rc8+)
+### Live cycle duration (Laundry Monitor 0.1.8+)
 
 The integration now exposes `cycle_started_at` (enabled by default).
 Select that timestamp sensor under **Primary entities → Cycle started at**
@@ -100,7 +100,7 @@ After completion, it shows `last_cycle_duration`.
 
 Existing configurations continue to work: the optional
 `current_cycle_duration_entity` is a **legacy snapshot** on integration
-0.1.8-rc8, not a live counter. It is disabled by default on new integration
+0.1.8, not a live counter. It is disabled by default on new integration
 installations. If the timestamp is missing, the card shows that configured
 snapshot while active (or `—` if unavailable); it **never displays the
 previous cycle's duration as an active-cycle timer**. For a live timer, add
@@ -241,7 +241,7 @@ power_entity: sensor.stiralka_current_power
 current_entity: sensor.stiralka_current_draw
 ```
 
-### Живая длительность цикла (Laundry Monitor 0.1.8-rc8+)
+### Живая длительность цикла (Laundry Monitor 0.1.8+)
 
 Интеграция предоставляет сущность `cycle_started_at` (включена по
 умолчанию). Выберите этот timestamp-датчик в редакторе в разделе
@@ -262,7 +262,7 @@ last_cycle_duration_entity: sensor.stiralka_last_cycle_duration
 не появляются. После завершения отображается `last_cycle_duration`.
 
 Старые конфигурации продолжают работать: необязательная
-`current_cycle_duration_entity` в версии интеграции 0.1.8-rc8 показывает
+`current_cycle_duration_entity` в версии интеграции 0.1.8 показывает
 только **снимок длительности**, а не живой счётчик. На новых установках
 интеграции эта сущность по умолчанию отключена. Если timestamp недоступен,
 во время цикла показывается настроенный старый снимок (либо `—` при
