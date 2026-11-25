@@ -1,3 +1,5 @@
+**[English](#Laundry-Monitor-Card) | [Русский](#Карточка-Laundry-Monitor)**
+
 # Laundry Monitor Card
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
@@ -157,6 +159,8 @@ Home Assistant 2024.11.0 or newer is required by the card frontend.
 The card does not contain default entity IDs. Select entities from the
 corresponding Laundry Monitor device in the visual editor or configure them
 explicitly in YAML.
+
+**[English](#Laundry-Monitor-Card) | [Русский](#Карточка-Laundry-Monitor)**
 
 # Карточка Laundry Monitor
 
@@ -322,3 +326,5 @@ last_cycle_duration_entity: sensor.stiralka_last_cycle_duration
 Для самой карточки требуется Home Assistant 2024.11.0 или новее.
 Карточка не содержит заранее заданных entity ID: выберите сущности
 конкретного устройства Laundry Monitor в визуальном редакторе или задайте их в YAML.
+
+**[English](#Laundry-Monitor-Card) | [Русский](#Карточка-Laundry-Monitor)**
